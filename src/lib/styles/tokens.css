@@ -1,0 +1,26 @@
+:root {
+	/* default theme — dark page with sage-green pill accents */
+	--bg: #1f1f1f;
+	--fg: #f6f6f6;
+	--pill-bg: #3a3a38;
+	--pill-fg: #a6bf86;
+	--accent-link: #a6bf86;
+	--rule: rgba(246, 246, 246, 0.4);
+
+	/* layout tokens shared by both themes */
+	--nav-pad-x: 24px;
+	--nav-pad-y: 20px;
+	--page-pad-x: 24px;
+	--page-pad-y: 20px;
+	--gap-row: 32px;
+	--gap-col: 24px;
+}
+
+:root[data-theme='alt'] {
+	--bg: #7e8b6b;
+	--fg: #f6f6f6;
+	--pill-bg: #6b7858;
+	--pill-fg: #e8b33d;
+	--accent-link: #e8b33d;
+	--rule: rgba(246, 246, 246, 0.5);
+}
