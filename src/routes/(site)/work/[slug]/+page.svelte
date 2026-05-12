@@ -366,6 +366,31 @@
 		filter: blur(3px);
 	}
 
+	/* Mobile: stack the credits section as Instagram + Website (side by side
+	   row at top), then "collaborators" label, then the names list. */
+	@media (max-width: 768px) {
+		.credits-grid {
+			display: flex;
+			flex-direction: column;
+			gap: 16px;
+		}
+
+		.credits-links {
+			order: 1;
+			justify-content: flex-start;
+			gap: 24px;
+		}
+
+		.credits-label {
+			order: 2;
+			margin-bottom: -8px;
+		}
+
+		.credits-list {
+			order: 3;
+		}
+	}
+
 	.pager {
 		display: flex;
 		justify-content: space-between;

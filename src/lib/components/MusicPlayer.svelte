@@ -288,4 +288,82 @@
 		opacity: 0.5;
 		cursor: not-allowed;
 	}
+
+	@media (max-width: 600px) {
+		/* Homepage layout: span the player across the screen with margin so the
+		   marquee can shrink instead of pushing buttons off the edges. */
+		.center-wrap {
+			bottom: 16px;
+			left: 16px;
+			right: 16px;
+			transform: none;
+			justify-content: center;
+		}
+
+		.player {
+			gap: 4px;
+			width: 100%;
+			justify-content: center;
+		}
+
+		.pill {
+			padding: 6px 10px;
+			font-size: 0.8rem; /* 16px */
+		}
+
+		.marquee-pill {
+			flex: 1 1 0;
+			min-width: 0;
+			max-width: none;
+		}
+
+		.prefix {
+			display: none;
+		}
+
+		/* Off-home fan-out shrinks too. */
+		.fan-wrap {
+			bottom: 16px;
+			right: 16px;
+			width: 48px;
+			height: 48px;
+		}
+
+		.trigger {
+			width: 48px;
+			height: 48px;
+		}
+
+		.note {
+			width: 18px;
+			height: 18px;
+		}
+
+		.control {
+			height: 48px;
+			min-width: 48px;
+			padding: 0 12px;
+			font-size: 0.8rem;
+		}
+
+		.control-info {
+			width: 200px;
+			min-width: 200px;
+		}
+
+		.fan-wrap:hover .control-info,
+		.fan-wrap:focus-within .control-info {
+			transform: translate(-216px, 0) scale(1);
+		}
+
+		.fan-wrap:hover .control-play,
+		.fan-wrap:focus-within .control-play {
+			transform: translate(-58px, -58px) scale(1);
+		}
+
+		.fan-wrap:hover .control-next,
+		.fan-wrap:focus-within .control-next {
+			transform: translate(0, -68px) scale(1);
+		}
+	}
 </style>

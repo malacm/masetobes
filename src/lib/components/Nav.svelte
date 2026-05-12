@@ -100,4 +100,23 @@
 	.pill.active .pill-text {
 		filter: blur(3px);
 	}
+
+	@media (max-width: 600px) {
+		.nav {
+			padding: 12px 16px;
+		}
+
+		.name {
+			font-size: 1rem; /* 20px */
+		}
+
+		.links {
+			gap: 4px;
+		}
+
+		.pill {
+			padding: 6px 10px;
+			font-size: 0.8rem; /* 16px */
+		}
+	}
 </style>
