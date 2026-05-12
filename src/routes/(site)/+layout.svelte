@@ -3,6 +3,7 @@
 	import Nav from '$lib/components/Nav.svelte';
 	import Footer from '$lib/components/Footer.svelte';
 	import AboutOverlay from '$lib/components/AboutOverlay.svelte';
+	import MusicPlayer from '$lib/components/MusicPlayer.svelte';
 
 	let { data, children } = $props();
 
@@ -28,6 +29,8 @@
 		iconAlt={settings?.themeIconFooterAlt ?? settings?.themeIconAlt}
 	/>
 {/if}
+
+<MusicPlayer tracks={settings?.playlist ?? []} collapsible={!isHome} />
 
 <AboutOverlay content={settings?.aboutContent} contactEmail={settings?.contactEmail} />
 

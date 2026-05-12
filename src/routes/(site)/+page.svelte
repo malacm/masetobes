@@ -1,11 +1,9 @@
 <script lang="ts">
 	import HomepageIcon from '$lib/components/HomepageIcon.svelte';
-	import MusicPlayer from '$lib/components/MusicPlayer.svelte';
 
 	let { data } = $props();
 
 	const settings = $derived(data.siteSettings);
-	const tracks = $derived(settings?.playlist ?? []);
 </script>
 
 <section class="home">
@@ -14,10 +12,6 @@
 			iconDefault={settings?.themeIconDefault}
 			iconAlt={settings?.themeIconAlt}
 		/>
-	</div>
-
-	<div class="player-slot">
-		<MusicPlayer {tracks} />
 	</div>
 </section>
 
@@ -35,13 +29,5 @@
 		display: flex;
 		align-items: center;
 		justify-content: center;
-	}
-
-	.player-slot {
-		position: fixed;
-		bottom: 24px;
-		left: 50%;
-		transform: translateX(-50%);
-		z-index: 30;
 	}
 </style>

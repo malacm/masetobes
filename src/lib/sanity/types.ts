@@ -59,6 +59,20 @@ export type WorkProject = {
 	websiteUrl?: string;
 	thumbnailImage?: SanityImageRef;
 	heroImage?: SanityImageRef;
+	heroVideo?: SanityFileRef;
+	heroVideoPoster?: SanityImageRef;
+	heroLogo?: SanityImageRef;
+	heroLogoPosition?:
+		| 'top-left'
+		| 'top-center'
+		| 'top-right'
+		| 'middle-left'
+		| 'center'
+		| 'middle-right'
+		| 'bottom-left'
+		| 'bottom-center'
+		| 'bottom-right';
+	heroLogoWidth?: number;
 	galleryItems?: GalleryItem[];
 	publishedAt?: string;
 	orderRank?: string;

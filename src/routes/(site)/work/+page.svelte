@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { imageUrl } from '$lib/sanity/image';
+	import { imageUrl, imageSrcset } from '$lib/sanity/image';
 
 	let { data } = $props();
 </script>
@@ -15,8 +15,11 @@
 						<img
 							class="thumb"
 							src={imageUrl(project.thumbnailImage, { width: 1200 }) ?? ''}
+							srcset={imageSrcset(project.thumbnailImage, [400, 800, 1200, 1600])}
+							sizes="(max-width: 768px) 100vw, 50vw"
 							alt={project.title}
 							loading="lazy"
+							decoding="async"
 						/>
 					{:else}
 						<div class="thumb thumb--placeholder" aria-hidden="true"></div>

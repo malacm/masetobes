@@ -40,6 +40,11 @@ export const workProjectBySlugQuery = /* groq */ `
   websiteUrl,
   thumbnailImage,
   heroImage,
+  heroVideo,
+  heroVideoPoster,
+  heroLogo,
+  heroLogoPosition,
+  heroLogoWidth,
   galleryItems,
   publishedAt,
   orderRank

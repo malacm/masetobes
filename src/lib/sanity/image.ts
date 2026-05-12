@@ -16,6 +16,21 @@ export function imageUrl(source: SanityImageSource | undefined | null, opts: { w
 	return b.url();
 }
 
+/**
+ * Build a srcset string from a Sanity image source. The browser picks the
+ * closest matching size based on viewport + DPR, so we serve a 600px image
+ * to phones instead of a 2400px image.
+ */
+export function imageSrcset(
+	source: SanityImageSource | undefined | null,
+	widths: number[] = [640, 1024, 1600, 2400]
+): string | undefined {
+	if (!source) return undefined;
+	return widths
+		.map((w) => `${builder.image(source).auto('format').fit('max').width(w).url()} ${w}w`)
+		.join(', ');
+}
+
 export function fileUrl(ref: string | undefined | null): string | null {
 	if (!ref) return null;
 	const [, id, ext] = ref.match(/^file-([a-f0-9]+)-(\w+)$/) ?? [];

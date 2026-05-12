@@ -97,6 +97,21 @@ a {
 	text-decoration: none;
 }
 
+/* Custom hover cursor: 10×10 #f6f6f6 circle on any interactive element.
+   Inline SVG data-URI — no network request. The "5 5" sets the hotspot
+   (where the click registers) to the circle's center. `pointer` is the
+   fallback if SVG cursors aren't supported. */
+a,
+button {
+	cursor: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 10 10"><circle cx="5" cy="5" r="5" fill="%23f6f6f6"/></svg>')
+			5 5,
+		pointer;
+}
+
+button:disabled {
+	cursor: not-allowed;
+}
+
 ul,
 ol {
 	list-style: none;

@@ -68,7 +68,7 @@
 
 	.name {
 		font-weight: 700;
-		font-size: 20px;
+		font-size: 1.6rem; /* 32px at 20px base */
 		color: var(--fg);
 	}
 

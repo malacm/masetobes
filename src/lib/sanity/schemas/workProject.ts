@@ -70,9 +70,60 @@ export const workProject = defineType({
 		defineField({
 			name: 'heroImage',
 			title: 'Hero image',
-			description: 'Featured opening image of the project page (e.g. the Dome wordmark).',
+			description: 'Featured opening image of the project page. Used only if no hero video is uploaded below.',
 			type: 'image',
 			options: { hotspot: true }
+		}),
+		defineField({
+			name: 'heroVideo',
+			title: 'Hero video',
+			description: 'Optional. If set, plays in place of the hero image (autoplay, muted, looping).',
+			type: 'file',
+			options: { accept: 'video/*' }
+		}),
+		defineField({
+			name: 'heroVideoPoster',
+			title: 'Hero video poster',
+			description:
+				'Optional still image shown before/while the hero video loads. A representative frame from the video.',
+			type: 'image',
+			hidden: ({ parent }) => !parent?.heroVideo
+		}),
+		defineField({
+			name: 'heroLogo',
+			title: 'Hero logo overlay',
+			description: 'Optional. SVG/PNG layered on top of the hero media (e.g. a wordmark).',
+			type: 'image',
+			options: { accept: 'image/svg+xml,image/*' }
+		}),
+		defineField({
+			name: 'heroLogoPosition',
+			title: 'Hero logo position',
+			type: 'string',
+			options: {
+				list: [
+					{ title: 'Top left', value: 'top-left' },
+					{ title: 'Top center', value: 'top-center' },
+					{ title: 'Top right', value: 'top-right' },
+					{ title: 'Middle left', value: 'middle-left' },
+					{ title: 'Center', value: 'center' },
+					{ title: 'Middle right', value: 'middle-right' },
+					{ title: 'Bottom left', value: 'bottom-left' },
+					{ title: 'Bottom center', value: 'bottom-center' },
+					{ title: 'Bottom right', value: 'bottom-right' }
+				]
+			},
+			initialValue: 'center',
+			hidden: ({ parent }) => !parent?.heroLogo
+		}),
+		defineField({
+			name: 'heroLogoWidth',
+			title: 'Hero logo width (%)',
+			description: 'Logo width as a percentage of the hero. Default 40%.',
+			type: 'number',
+			validation: (rule) => rule.min(5).max(100),
+			initialValue: 40,
+			hidden: ({ parent }) => !parent?.heroLogo
 		}),
 		defineField({
 			name: 'galleryItems',

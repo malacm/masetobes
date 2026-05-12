@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { imageUrl } from '$lib/sanity/image';
+	import { imageUrl, imageSrcset, fileUrl } from '$lib/sanity/image';
 	import Gallery from '$lib/components/Gallery.svelte';
 	import PortableText from '$lib/components/PortableText.svelte';
 
@@ -38,9 +38,43 @@
 		</section>
 	</div>
 
-	{#if project.heroImage}
+	{#if project.heroVideo || project.heroImage}
 		<div class="hero">
-			<img src={imageUrl(project.heroImage, { width: 2400 }) ?? ''} alt={project.title} />
+			{#if project.heroVideo}
+				<video
+					class="hero-media"
+					src={fileUrl(project.heroVideo.asset?._ref ?? null) ?? ''}
+					poster={project.heroVideoPoster
+						? (imageUrl(project.heroVideoPoster, { width: 2400 }) ?? undefined)
+						: undefined}
+					autoplay
+					muted
+					loop
+					playsinline
+					preload="metadata"
+				></video>
+			{:else if project.heroImage}
+				<img
+					class="hero-media"
+					src={imageUrl(project.heroImage, { width: 2400 }) ?? ''}
+					srcset={imageSrcset(project.heroImage)}
+					sizes="100vw"
+					alt={project.title}
+					fetchpriority="high"
+					decoding="async"
+				/>
+			{/if}
+
+			{#if project.heroLogo}
+				<img
+					class="hero-logo"
+					data-position={project.heroLogoPosition ?? 'center'}
+					style:width={`${project.heroLogoWidth ?? 40}%`}
+					src={imageUrl(project.heroLogo, { width: 1200 }) ?? ''}
+					alt=""
+					decoding="async"
+				/>
+			{/if}
 		</div>
 	{/if}
 
@@ -223,12 +257,70 @@
 	}
 
 	.hero {
+		position: relative;
 		margin-top: 16px;
 	}
 
-	.hero img {
+	.hero-media {
+		display: block;
 		width: 100%;
 		height: auto;
+	}
+
+	.hero-logo {
+		position: absolute;
+		height: auto;
+		max-width: 100%;
+		pointer-events: none;
+		/* Inset distance from corners/edges. */
+		--inset: 24px;
+	}
+
+	/* Top row */
+	.hero-logo[data-position='top-left'] {
+		top: var(--inset);
+		left: var(--inset);
+	}
+	.hero-logo[data-position='top-center'] {
+		top: var(--inset);
+		left: 50%;
+		transform: translateX(-50%);
+	}
+	.hero-logo[data-position='top-right'] {
+		top: var(--inset);
+		right: var(--inset);
+	}
+
+	/* Middle row */
+	.hero-logo[data-position='middle-left'] {
+		top: 50%;
+		left: var(--inset);
+		transform: translateY(-50%);
+	}
+	.hero-logo[data-position='center'] {
+		top: 50%;
+		left: 50%;
+		transform: translate(-50%, -50%);
+	}
+	.hero-logo[data-position='middle-right'] {
+		top: 50%;
+		right: var(--inset);
+		transform: translateY(-50%);
+	}
+
+	/* Bottom row */
+	.hero-logo[data-position='bottom-left'] {
+		bottom: var(--inset);
+		left: var(--inset);
+	}
+	.hero-logo[data-position='bottom-center'] {
+		bottom: var(--inset);
+		left: 50%;
+		transform: translateX(-50%);
+	}
+	.hero-logo[data-position='bottom-right'] {
+		bottom: var(--inset);
+		right: var(--inset);
 	}
 
 	.gallery-wrap {

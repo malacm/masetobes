@@ -1,22 +1,76 @@
 <script lang="ts">
-	import { imageUrl, fileUrl } from '$lib/sanity/image';
+	import { imageUrl, imageSrcset, fileUrl } from '$lib/sanity/image';
 	import type { GalleryItem } from '$lib/sanity/types';
 
 	type Props = { item: GalleryItem };
 	const { item }: Props = $props();
 
-	const src = $derived(
-		item.type === 'video'
-			? fileUrl(item.video?.asset?._ref ?? null)
-			: imageUrl(item.image, { width: 1600 })
-	);
+	const isVideo = $derived(item.type === 'video');
+	const videoRef = $derived(item.video?.asset?._ref ?? null);
+
+	const imgSrc = $derived(!isVideo ? imageUrl(item.image, { width: 1600 }) : null);
+	const imgSrcset = $derived(!isVideo ? imageSrcset(item.image) : undefined);
+	const imgSizes = $derived(item.layout === 'full' ? '100vw' : '(max-width: 768px) 100vw, 50vw');
+
+	let videoEl: HTMLVideoElement | undefined = $state();
+	let videoSrc = $state<string | null>(null);
+	let isVisible = $state(false);
+
+	// Lazy-load + auto-pause videos via IntersectionObserver. Videos only get
+	// their `src` set when they near the viewport, and pause when scrolled
+	// away — keeps gallery scroll smooth even with many videos.
+	$effect(() => {
+		if (!videoEl || !videoRef) return;
+		const el = videoEl;
+		const observer = new IntersectionObserver(
+			([entry]) => {
+				isVisible = entry.isIntersecting;
+				if (entry.isIntersecting) {
+					if (!videoSrc) videoSrc = fileUrl(videoRef);
+					// Best-effort: works when the video is already loaded.
+					// First-time load races the DOM src update — caught by
+					// the oncanplay handler below.
+					el.play().catch(() => {});
+				} else {
+					el.pause();
+				}
+			},
+			{ rootMargin: '200px 0px', threshold: 0 }
+		);
+		observer.observe(el);
+		return () => observer.disconnect();
+	});
+
+	// Fires once the video has loaded enough to start. If it's currently in
+	// the viewport, kick off playback — closes the race condition where the
+	// IO callback's play() ran before the new src had been applied to the DOM.
+	function handleCanPlay() {
+		if (isVisible && videoEl?.paused) {
+			videoEl.play().catch(() => {});
+		}
+	}
 </script>
 
 <figure class="gallery-item" data-layout={item.layout}>
-	{#if item.type === 'video' && src}
-		<video {src} autoplay muted loop playsinline></video>
-	{:else if src}
-		<img {src} alt={item.caption ?? ''} loading="lazy" />
+	{#if isVideo}
+		<video
+			bind:this={videoEl}
+			src={videoSrc ?? undefined}
+			muted
+			loop
+			playsinline
+			preload="metadata"
+			oncanplay={handleCanPlay}
+		></video>
+	{:else if imgSrc}
+		<img
+			src={imgSrc}
+			srcset={imgSrcset}
+			sizes={imgSizes}
+			alt={item.caption ?? ''}
+			loading="lazy"
+			decoding="async"
+		/>
 	{/if}
 	{#if item.caption}
 		<figcaption>{item.caption}</figcaption>
