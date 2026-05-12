@@ -21,7 +21,7 @@
  * design tokens ever change.
  */
 
-import { gsap } from 'gsap';
+import gsap from 'gsap';
 import { theme } from '$lib/stores/theme.svelte';
 
 const BG_ALT = '#7e8b6b';

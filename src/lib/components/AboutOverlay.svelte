@@ -33,7 +33,7 @@
 		></button>
 		<div class="panel" role="dialog" aria-modal="true" aria-label="About" tabindex="-1">
 			{#if aboutOverlay.view === 'form'}
-				<ContactForm />
+				<ContactForm fallbackEmail={contactEmail} />
 			{:else}
 				<div class="bio">
 					<PortableText value={content} />

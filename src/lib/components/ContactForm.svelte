@@ -1,12 +1,25 @@
 <script lang="ts">
 	import { aboutOverlay } from '$lib/stores/aboutOverlay.svelte';
 
+	type Props = {
+		fallbackEmail?: string;
+	};
+
+	const { fallbackEmail }: Props = $props();
+
 	type Status = { kind: 'idle' } | { kind: 'sending' } | { kind: 'sent' } | { kind: 'error'; message: string };
 
 	let status = $state<Status>({ kind: 'idle' });
 	let name = $state('');
 	let email = $state('');
 	let message = $state('');
+
+	function openMailtoFallback() {
+		if (!fallbackEmail) return;
+		const subject = encodeURIComponent(`Portfolio contact from ${name || 'a visitor'}`);
+		const body = encodeURIComponent(`${message}\n\n— ${name}${email ? ` (${email})` : ''}`);
+		window.location.href = `mailto:${fallbackEmail}?subject=${subject}&body=${body}`;
+	}
 
 	async function handleSubmit(e: SubmitEvent) {
 		e.preventDefault();
@@ -17,6 +30,13 @@
 				headers: { 'content-type': 'application/json' },
 				body: JSON.stringify({ name, email, message })
 			});
+			// 503 = email service not configured on the server. Fall back to
+			// opening the visitor's mail client with the message pre-filled.
+			if (res.status === 503 && fallbackEmail) {
+				openMailtoFallback();
+				status = { kind: 'idle' };
+				return;
+			}
 			const data = await res.json();
 			if (!res.ok || !data.ok) {
 				status = { kind: 'error', message: data.error ?? 'Something went wrong.' };
