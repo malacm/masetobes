@@ -1,7 +1,9 @@
 import { json } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
 import { resend, isResendConfigured } from '$lib/server/resend';
-import { RESEND_FROM_EMAIL, CONTACT_TO_EMAIL } from '$env/static/private';
+import { env } from '$env/dynamic/private';
+
+const { RESEND_FROM_EMAIL, CONTACT_TO_EMAIL } = env;
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
