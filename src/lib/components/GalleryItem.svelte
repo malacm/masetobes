@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { imageUrl, imageSrcset, fileUrl } from '$lib/sanity/image';
+	import { imageUrl, imageSrcset, imageAspectRatio, fileUrl } from '$lib/sanity/image';
 	import type { GalleryItem } from '$lib/sanity/types';
 
 	type Props = { item: GalleryItem };
@@ -7,18 +7,32 @@
 
 	const isVideo = $derived(item.type === 'video');
 	const videoRef = $derived(item.video?.asset?._ref ?? null);
+	// A video slot with no file uploaded yet still reserves its space, so the
+	// page keeps the design's rhythm while the footage is being added.
+	const isPlaceholder = $derived(isVideo && !videoRef);
 
 	const imgSrc = $derived(!isVideo ? imageUrl(item.image, { width: 1600 }) : null);
 	const imgSrcset = $derived(!isVideo ? imageSrcset(item.image) : undefined);
+	// Reserve the image's box on first render. Without this the gallery has no
+	// height until the images arrive, which both shifts the layout and makes
+	// every scroll measurement taken at mount wrong.
+	const imgRatio = $derived(item.aspectRatio ?? imageAspectRatio(item.image));
 	const imgSizes = $derived(item.layout === 'full' ? '100vw' : '(max-width: 768px) 100vw, 50vw');
 
 	let videoEl: HTMLVideoElement | undefined = $state();
-	let videoSrc = $state<string | null>(null);
 	let isVisible = $state(false);
+	let measuredRatio = $state<number | null>(null);
 
-	// Lazy-load + auto-pause videos via IntersectionObserver. Videos only get
-	// their `src` set when they near the viewport, and pause when scrolled
-	// away — keeps gallery scroll smooth even with many videos.
+	// A video with no source has no dimensions, so its grid cell collapses to
+	// the 300x150 default and the whole row loses its height. `preload` is
+	// still "metadata", so this costs a few header bytes per video rather than
+	// the file — enough for the browser to reserve the right box up front.
+	const videoSrc = $derived(fileUrl(videoRef));
+	// Prefer the ratio recorded on the item; fall back to what the file reports.
+	const videoRatio = $derived(item.aspectRatio ?? measuredRatio);
+
+	// Play only while on screen, and pause on the way out — keeps gallery
+	// scroll smooth even with many videos.
 	$effect(() => {
 		if (!videoEl || !videoRef) return;
 		const el = videoEl;
@@ -26,10 +40,8 @@
 			([entry]) => {
 				isVisible = entry.isIntersecting;
 				if (entry.isIntersecting) {
-					if (!videoSrc) videoSrc = fileUrl(videoRef);
-					// Best-effort: works when the video is already loaded.
-					// First-time load races the DOM src update — caught by
-					// the oncanplay handler below.
+					// Best-effort: works when the video is already buffered.
+					// A cold start is caught by the oncanplay handler below.
 					el.play().catch(() => {});
 				} else {
 					el.pause();
@@ -40,6 +52,12 @@
 		observer.observe(el);
 		return () => observer.disconnect();
 	});
+
+	function handleLoadedMetadata() {
+		if (videoEl?.videoWidth && videoEl.videoHeight) {
+			measuredRatio = videoEl.videoWidth / videoEl.videoHeight;
+		}
+	}
 
 	// Fires once the video has loaded enough to start. If it's currently in
 	// the viewport, kick off playback — closes the race condition where the
@@ -52,14 +70,20 @@
 </script>
 
 <figure class="gallery-item" data-layout={item.layout}>
-	{#if isVideo}
+	{#if isPlaceholder}
+		<div class="placeholder" style:aspect-ratio={item.aspectRatio ?? 1.5}>
+			<span>video</span>
+		</div>
+	{:else if isVideo}
 		<video
 			bind:this={videoEl}
 			src={videoSrc ?? undefined}
+			style:aspect-ratio={videoRatio ?? undefined}
 			muted
 			loop
 			playsinline
 			preload="metadata"
+			onloadedmetadata={handleLoadedMetadata}
 			oncanplay={handleCanPlay}
 		></video>
 	{:else if imgSrc}
@@ -67,6 +91,7 @@
 			src={imgSrc}
 			srcset={imgSrcset}
 			sizes={imgSizes}
+			style:aspect-ratio={imgRatio ?? undefined}
 			alt={item.caption ?? ''}
 			loading="lazy"
 			decoding="async"
@@ -84,22 +109,26 @@
 		gap: 8px;
 	}
 
+	/* Media fills its grid cell; height follows the intrinsic aspect ratio. */
 	img,
 	video {
-		width: auto;
+		width: 100%;
 		height: auto;
-		max-width: 100%;
 		object-fit: contain;
 	}
 
-	/* In paired rows, force media to fill its (allocated) cell width so videos
-	   and images both render edge-to-edge of their cell regardless of intrinsic
-	   width. Heights then come from each item's natural aspect ratio. */
-	.gallery-item[data-layout='pair-large'] img,
-	.gallery-item[data-layout='pair-large'] video,
-	.gallery-item[data-layout='pair-small'] img,
-	.gallery-item[data-layout='pair-small'] video {
+	.placeholder {
+		display: flex;
+		align-items: center;
+		justify-content: center;
 		width: 100%;
+		border: 1px dashed var(--rule);
+		border-radius: var(--pill-radius);
+		color: var(--fg);
+		opacity: 0.45;
+		font-size: 1rem;
+		letter-spacing: var(--track-tight);
+		text-transform: lowercase;
 	}
 
 	figcaption {

@@ -1,26 +1,68 @@
+/* Values below are taken from the Figma file (Untitled, node 1:85 et al).
+   The desktop frame is 1440 wide with 20px page padding, leaving a 1400px
+   content area divided into 12 columns with 20px gutters. Every media width
+   in the designs is a whole number of those columns (1400 / 927 / 808 / 690 /
+   572 / 453), which is why the grid is modelled explicitly here. */
+
 :root {
-	/* default theme — dark page with sage-green pill accents */
-	--bg: #1f1f1f;
+	/* default theme — "Color Variation 01" */
+	--bg: #231f20;
 	--fg: #f6f6f6;
-	--pill-bg: #3a3a38;
+	--pill-bg: rgba(246, 246, 246, 0.2);
 	--pill-fg: #a6bf86;
 	--accent-link: #a6bf86;
-	--rule: rgba(246, 246, 246, 0.4);
+	--rule: rgba(255, 255, 255, 0.3);
 
-	/* layout tokens shared by both themes */
-	--nav-pad-x: 24px;
-	--nav-pad-y: 20px;
-	--page-pad-x: 24px;
+	/* layout */
+	--page-pad-x: 20px;
 	--page-pad-y: 20px;
-	--gap-row: 32px;
-	--gap-col: 24px;
+	--nav-pad-x: 20px;
+	--nav-pad-y: 20px;
+	--grid-cols: 12;
+	--gap-col: 20px;
+	--gap-row: 20px;
+
+	/* distance from the top of the page to the first block of content */
+	--content-top: 235px;
+	/* rhythm between major blocks (header → gallery, credits → pager) */
+	--section-gap: 160px;
+
+	/* pills — nav links and the prev/next pager share one treatment */
+	--pill-radius: 5px;
+	--pill-pad-x: 10px;
+	--pill-blur: 10px;
+	--pill-gap: 10px;
+	--text-blur: 3px;
+
+	/* type */
+	--track-tight: -0.02em;
+	--track-display: -0.04em;
 }
 
 :root[data-theme='alt'] {
-	--bg: #7e8b6b;
+	/* "Color Variation 02" — sage page, amber accents */
+	--bg: #72805c;
 	--fg: #f6f6f6;
-	--pill-bg: #6b7858;
-	--pill-fg: #e8b33d;
-	--accent-link: #e8b33d;
-	--rule: rgba(246, 246, 246, 0.5);
+	--pill-bg: rgba(246, 246, 246, 0.2);
+	--pill-fg: #ffc438;
+	--accent-link: #ffc438;
+	--rule: rgba(255, 255, 255, 0.3);
+}
+
+/* Mobile frames are 402 wide with 10px padding, and the grid collapses to a
+   single full-width column. */
+@media (max-width: 768px) {
+	:root {
+		--page-pad-x: 10px;
+		--page-pad-y: 10px;
+		--nav-pad-x: 10px;
+		--nav-pad-y: 10px;
+		--gap-col: 10px;
+		--gap-row: 10px;
+		--content-top: 102px;
+		--section-gap: 60px;
+		--pill-radius: 3px;
+		--pill-pad-x: 6px;
+		--text-blur: 2px;
+	}
 }

@@ -68,6 +68,15 @@ export const workProject = defineType({
 			validation: (rule) => rule.required()
 		}),
 		defineField({
+			name: 'thumbnailRatio',
+			title: 'Thumbnail shape (width ÷ height)',
+			description:
+				'Shape of the card on the /work index — the image is cropped to fill it. 0.8 for the 4:5 portrait cards, 1 for the square ones.',
+			type: 'number',
+			initialValue: 0.8,
+			validation: (rule) => rule.positive()
+		}),
+		defineField({
 			name: 'heroImage',
 			title: 'Hero image',
 			description: 'Featured opening image of the project page. Used only if no hero video is uploaded below.',

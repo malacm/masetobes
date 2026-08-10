@@ -2,6 +2,11 @@
 	import { imageUrl, imageSrcset, fileUrl } from '$lib/sanity/image';
 	import Gallery from '$lib/components/Gallery.svelte';
 	import PortableText from '$lib/components/PortableText.svelte';
+	import { reveal, revealItems, revealOnEnter, driftOnScroll } from '$lib/animations/reveal';
+
+	/* The header's seven elements stagger over ~0.42s; the first gallery row is
+	   on screen too, so it comes in just behind them as one arrival. */
+	const GALLERY_DELAY = 0.35;
 
 	let { data } = $props();
 
@@ -12,16 +17,36 @@
 			Boolean(project.instagramUrl) ||
 			Boolean(project.websiteUrl)
 	);
+
+	const hasHero = $derived(Boolean(project.heroVideo || project.heroImage));
 </script>
 
 <article class="project">
-	<div class="top-grid">
+	<!-- The info blocks are `display: contents` on desktop, so the reveal has to
+	     target the leaf elements rather than the grid's direct children. -->
+	<div
+		class="top-grid"
+		use:driftOnScroll
+		use:revealItems={{
+			selector: '.tagline, .info-title, .info-items, .rule, .description',
+			stagger: 0.07,
+			motion: 'blur'
+		}}
+	>
 		{#if project.tagline}
 			<h1 class="tagline">{project.tagline}</h1>
 		{/if}
 
+		<!-- Info blocks sit at columns 9 and 12 of the 12-column grid: their
+		     titles share the first row with the tagline, their items share the
+		     third row with the description. -->
 		{#each project.infoBlocks ?? [] as block, i (block._key)}
-			<section class="info-block" style:--col={i + 2} style:--mobile-order={4 + i}>
+			<section
+				class="info-block"
+				style:--col={9 + i * 3}
+				style:--span={i === 0 ? 3 : 1}
+				style:--mobile-order={4 + i}
+			>
 				<h3 class="info-title">{block.title}</h3>
 				<ul class="info-items">
 					{#each block.items ?? [] as item, j (j)}
@@ -38,8 +63,8 @@
 		</section>
 	</div>
 
-	{#if project.heroVideo || project.heroImage}
-		<div class="hero">
+	{#if hasHero}
+		<div class="hero" use:reveal={{ delay: GALLERY_DELAY, eager: 1 }}>
 			{#if project.heroVideo}
 				<video
 					class="hero-media"
@@ -79,13 +104,20 @@
 	{/if}
 
 	{#if project.galleryItems && project.galleryItems.length > 0}
-		<div class="gallery-wrap">
-			<Gallery items={project.galleryItems} />
+		<div class="gallery-wrap" data-after-hero={hasHero}>
+			<!-- Whichever comes first is the page's opening image and loads with
+			     the header: the hero when there is one, otherwise the gallery's
+			     first row. -->
+			<Gallery
+				items={project.galleryItems}
+				revealDelay={GALLERY_DELAY}
+				eagerFirstRow={!hasHero}
+			/>
 		</div>
 	{/if}
 
 	{#if hasCredits}
-		<section class="credits">
+		<section class="credits" use:revealOnEnter>
 			<div class="credits-grid">
 				<div class="credits-label">collaborators</div>
 				<div class="credits-list">
@@ -105,7 +137,7 @@
 		</section>
 	{/if}
 
-	<nav class="pager" aria-label="project navigation">
+	<nav class="pager" aria-label="project navigation" use:revealOnEnter>
 		{#if neighbors.prev}
 			<a class="pager-link" href={`/work/${neighbors.prev.slug}`}>← prev</a>
 		{:else}
@@ -123,27 +155,26 @@
 	.project {
 		display: flex;
 		flex-direction: column;
-		gap: 24px;
-		padding-top: 12vh;
-		padding-bottom: 24px;
 	}
 
+	/* Header block: three rows (titles / rule / body) on the 12-column grid,
+	   7px apart. */
 	.top-grid {
 		display: grid;
-		grid-template-columns: 2fr 1fr 1fr;
+		grid-template-columns: repeat(var(--grid-cols), 1fr);
 		grid-template-rows: auto auto auto;
 		column-gap: var(--gap-col);
-		row-gap: 8px;
-		padding-bottom: 12vh;
+		row-gap: 7px;
 	}
 
 	.tagline {
 		grid-row: 1;
-		grid-column: 1;
+		grid-column: 1 / span 8;
 		font-size: 2.4rem; /* 48px at 20px base */
 		font-weight: 700;
 		color: var(--fg);
-		line-height: 1;
+		line-height: 1.1;
+		letter-spacing: var(--track-tight);
 		margin: 0;
 		align-self: end;
 	}
@@ -156,11 +187,13 @@
 
 	.info-title {
 		grid-row: 1;
-		grid-column: var(--col);
-		font-size: 1rem; /* 20px base */
+		grid-column: var(--col) / span var(--span);
+		font-size: 1rem; /* 20px */
 		font-weight: 700;
+		text-transform: lowercase;
 		color: var(--fg);
-		line-height: 1;
+		line-height: 1.3;
+		letter-spacing: var(--track-tight);
 		margin: 0;
 		align-self: end;
 	}
@@ -168,17 +201,21 @@
 	.rule {
 		grid-row: 2;
 		grid-column: 1 / -1;
-		border-top: 1px solid var(--fg);
+		border-top: 0.5px solid var(--rule);
 		margin: 0;
 	}
 
 	.description {
 		grid-row: 3;
-		grid-column: 1;
-		font-size: clamp(2rem, 5vw, 3rem); /* up to 60px (3rem) at 20px base */
+		grid-column: 1 / span 6;
+		font-size: 4.8rem; /* 96px */
 		font-weight: 700;
-		line-height: 1;
+		line-height: 0.9;
+		letter-spacing: var(--track-display);
 		color: var(--fg);
+		/* Display sizes overflow narrow columns on long words — the Figma text
+		   layers carry break-word for the same reason. */
+		overflow-wrap: break-word;
 	}
 
 	.description :global(p) {
@@ -187,12 +224,14 @@
 
 	.info-items {
 		grid-row: 3;
-		grid-column: var(--col);
+		grid-column: var(--col) / span var(--span);
 		font-size: 1rem;
 		display: flex;
 		flex-direction: column;
-		gap: 4px;
-		font-weight: 700;
+		font-weight: 400;
+		text-transform: lowercase;
+		line-height: 1.3;
+		letter-spacing: var(--track-tight);
 		color: var(--fg);
 		list-style: none;
 		padding: 0;
@@ -202,35 +241,27 @@
 	/* Mobile: stack everything in a single column. The info-blocks become
 	   flex rows so each title sits inline with its items. */
 	@media (max-width: 768px) {
-		.project {
-			padding-top: 8vh;
-		}
-
 		.top-grid {
 			display: flex;
 			flex-direction: column;
-			gap: 16px;
-			padding-bottom: 6vh;
+			gap: 8px;
 		}
 
 		.tagline {
 			order: 1;
-			grid-row: auto;
-			grid-column: auto;
-			font-size: 1.4rem;
+			font-size: 1.2rem; /* 24px */
+			/* The grid's `align-self: end` means "bottom"; in this flex column
+			   it would mean "right". */
+			align-self: flex-start;
 		}
 
 		.rule {
 			order: 2;
-			grid-row: auto;
-			grid-column: auto;
 		}
 
 		.description {
 			order: 3;
-			grid-row: auto;
-			grid-column: auto;
-			font-size: clamp(1.6rem, 6vw, 2.4rem);
+			font-size: 2.4rem; /* 48px */
 		}
 
 		.info-block {
@@ -242,14 +273,10 @@
 		}
 
 		.info-title {
-			grid-row: auto;
-			grid-column: auto;
 			align-self: baseline;
 		}
 
 		.info-items {
-			grid-row: auto;
-			grid-column: auto;
 			flex-direction: row;
 			flex-wrap: wrap;
 			gap: 6px 12px;
@@ -258,7 +285,7 @@
 
 	.hero {
 		position: relative;
-		margin-top: 16px;
+		margin-top: var(--section-gap);
 	}
 
 	.hero-media {
@@ -323,47 +350,62 @@
 		right: var(--inset);
 	}
 
+	/* The hero is the gallery's first row, so it keeps the row gutter. Without
+	   a hero the gallery takes the header's section break instead. */
 	.gallery-wrap {
-		margin-top: 8px;
+		margin-top: var(--section-gap);
+	}
+
+	.gallery-wrap[data-after-hero='true'] {
+		margin-top: var(--gap-row);
 	}
 
 	.credits {
-		margin-top: 0;
+		margin-top: var(--gap-row);
 		color: var(--fg);
+		font-size: 1rem;
+		letter-spacing: var(--track-tight);
 	}
 
 	.credits-grid {
 		display: grid;
-		grid-template-columns: minmax(140px, 1fr) 4fr auto;
+		grid-template-columns: repeat(var(--grid-cols), 1fr);
 		column-gap: var(--gap-col);
 		align-items: start;
 	}
 
 	.credits-label {
+		grid-column: 1 / span 2;
 		font-weight: 700;
+		text-transform: lowercase;
+		line-height: 1.1;
 		color: var(--fg);
 	}
 
 	.credits-list {
+		grid-column: 3 / span 7;
 		display: flex;
 		flex-direction: column;
-		gap: 4px;
+		font-weight: 400;
+		line-height: 1.3;
 	}
 
 	.credits-links {
+		grid-column: 10 / span 3;
 		display: flex;
-		gap: 24px;
+		gap: 15px;
 		justify-content: flex-end;
+		font-weight: 700;
+		text-transform: lowercase;
 	}
 
 	.credits-links a {
 		color: var(--accent-link);
-		font-weight: 700;
 		transition: filter 180ms ease;
 	}
 
 	.credits-links a:hover {
-		filter: blur(3px);
+		filter: blur(var(--text-blur));
 	}
 
 	/* Mobile: stack the credits section as Instagram + Website (side by side
@@ -391,23 +433,36 @@
 		}
 	}
 
+	/* Prev/next are pills in the same treatment as the nav links, with a rule
+	   87px below the top of the row closing the page off before the footer. */
 	.pager {
 		display: flex;
 		justify-content: space-between;
-		align-items: baseline;
-		margin-top: 96px;
-		margin-bottom: 32px;
-		font-size: clamp(28px, 3.2vw, 44px);
-		font-weight: 600;
-		line-height: 1;
+		align-items: flex-start;
+		margin-top: var(--section-gap);
+		min-height: 87px;
+		border-bottom: 0.5px solid var(--rule);
 	}
 
 	.pager-link {
-		color: var(--fg);
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		padding: 0 var(--pill-pad-x);
+		border-radius: var(--pill-radius);
+		background: var(--pill-bg);
+		backdrop-filter: blur(var(--pill-blur));
+		-webkit-backdrop-filter: blur(var(--pill-blur));
+		color: var(--pill-fg);
+		font-size: 2rem; /* 40px */
+		font-weight: 700;
+		line-height: normal;
+		letter-spacing: var(--track-tight);
+		transition: filter 180ms ease;
 	}
 
 	.pager-link:hover {
-		opacity: 0.7;
+		filter: blur(var(--text-blur));
 	}
 
 	.pager-link.disabled {
@@ -416,6 +471,16 @@
 	}
 
 	.pager-link.disabled:hover {
-		opacity: 0.3;
+		filter: none;
+	}
+
+	@media (max-width: 768px) {
+		.pager {
+			min-height: 48px;
+		}
+
+		.pager-link {
+			font-size: 1.1rem; /* 22px */
+		}
 	}
 </style>

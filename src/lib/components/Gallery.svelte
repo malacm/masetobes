@@ -1,114 +1,107 @@
 <script lang="ts">
 	import GalleryItem from './GalleryItem.svelte';
-	import type { GalleryItem as GalleryItemType } from '$lib/sanity/types';
+	import { revealItems } from '$lib/animations/reveal';
+	import type { GalleryItem as GalleryItemType, GalleryItemLayout } from '$lib/sanity/types';
 
 	type Props = {
 		items: GalleryItemType[];
+		/** Holds back the on-load reveal so it can follow a header's stagger. */
+		revealDelay?: number;
+		/** Treat the opening row as part of the page's load animation. */
+		eagerFirstRow?: boolean;
 	};
 
-	const { items }: Props = $props();
+	const { items, revealDelay = 0, eagerFirstRow = false }: Props = $props();
 
-	type Row = {
-		kind: 'full' | 'pair';
-		items: GalleryItemType[];
-		key: string;
-		asymmetric: boolean;
+	/* Column spans, straight from the Figma widths at a 1400px content width:
+	   1400 / 927 / 808 / 690 / 572 / 453 px. Items auto-flow and wrap once a
+	   row's 12 columns are used up, which reproduces every row in the designs:
+	   12, 6+6, 8+4, 4+8, 7+5, 5+7 and 4+4+4. */
+	const SPAN: Partial<Record<GalleryItemLayout, number>> = {
+		full: 12,
+		'two-thirds': 8,
+		'large-half': 7,
+		half: 6,
+		'small-half': 5,
+		third: 4
 	};
 
-	const isPair = (l: GalleryItemType['layout']) => l === 'pair-large' || l === 'pair-small';
+	const isLegacyPair = (l: GalleryItemLayout) => l === 'pair-large' || l === 'pair-small';
 
-	const rows = $derived.by<Row[]>(() => {
-		const result: Row[] = [];
-		let i = 0;
-		while (i < items.length) {
-			const item = items[i];
-			const next = items[i + 1];
-			if (isPair(item.layout) && next && isPair(next.layout)) {
-				const asymmetric = item.layout !== next.layout;
-				result.push({
-					kind: 'pair',
-					items: [item, next],
-					key: item._key,
-					asymmetric
-				});
-				i += 2;
+	/**
+	 * `pair-large` / `pair-small` predate the column grid, and their width was
+	 * never a property of the item alone — two adjacent pair items formed a row,
+	 * splitting it evenly when both carried the same value and asymmetrically
+	 * when they differed. So they have to be resolved by adjacency rather than
+	 * looked up per item. An unpaired one filled the row, as it used to.
+	 */
+	const spans = $derived.by<number[]>(() => {
+		const out: number[] = [];
+		for (let i = 0; i < items.length; i++) {
+			const layout = items[i].layout;
+			if (!isLegacyPair(layout)) {
+				out.push(SPAN[layout] ?? 12);
+				continue;
+			}
+			const next = items[i + 1]?.layout;
+			if (next && isLegacyPair(next)) {
+				if (layout === next) out.push(6, 6);
+				else if (layout === 'pair-large') out.push(7, 5);
+				else out.push(5, 7);
+				i++;
 			} else {
-				result.push({
-					kind: 'full',
-					items: [item],
-					key: item._key,
-					asymmetric: false
-				});
-				i += 1;
+				out.push(12);
 			}
 		}
-		return result;
+		return out;
+	});
+
+	/* Items filling the opening 12-column row. They sit side by side, so they
+	   have to arrive together — revealing one on load while its neighbour waits
+	   for a scrub would tear the row in half. */
+	const eagerCount = $derived.by(() => {
+		if (!eagerFirstRow) return 0;
+		let used = 0;
+		let count = 0;
+		for (const span of spans) {
+			if (used + span > 12) break;
+			used += span;
+			count += 1;
+			if (used === 12) break;
+		}
+		return count;
 	});
 </script>
 
-<div class="gallery">
-	{#each rows as row (row.key)}
-		<div class="row" data-kind={row.kind} data-asymmetric={row.asymmetric ? 'true' : 'false'}>
-			{#each row.items as item (item._key)}
-				<div class="cell" data-layout={item.layout}>
-					<GalleryItem {item} />
-				</div>
-			{/each}
+<div class="gallery" use:revealItems={{ delay: revealDelay, eager: eagerCount }}>
+	{#each items as item, i (item._key)}
+		<div class="cell" style:--span={spans[i]}>
+			<GalleryItem {item} />
 		</div>
 	{/each}
 </div>
 
 <style>
 	.gallery {
-		display: flex;
-		flex-direction: column;
-		gap: var(--gap-row);
+		display: grid;
+		grid-template-columns: repeat(var(--grid-cols), 1fr);
+		gap: var(--gap-row) var(--gap-col);
+		/* Rows are top-aligned in the designs: every item in a Figma row sits at
+		   y=0, so a shorter item leaves blank space below it rather than being
+		   pushed down to the row's baseline. */
+		align-items: start;
 		width: 100%;
 	}
 
-	.row {
-		display: flex;
-		gap: var(--gap-col);
-		align-items: flex-end;
-		width: 100%;
-	}
-
-	/* Asymmetric pairs (one large + one small): cells stretch to equal heights
-	   so the smaller item sits at the top of its cell with blank space below.
-	   Symmetric pairs (same size both sides) keep flex-end alignment + true
-	   sizes per the original spec. */
-	.row[data-kind='pair'][data-asymmetric='true'] {
-		align-items: stretch;
-	}
-
-	.row[data-kind='full'] .cell {
-		flex: 1;
-	}
-
-	.row[data-kind='pair'] .cell {
-		flex: 1;
+	.cell {
+		grid-column: span var(--span);
 		min-width: 0;
 	}
 
-	/* Asymmetric pair: large gets ~62%, small ~38% in document order. */
-	.row[data-kind='pair'][data-asymmetric='true'] .cell[data-layout='pair-large'] {
-		flex: 1.65;
-	}
-
-	.row[data-kind='pair'][data-asymmetric='true'] .cell[data-layout='pair-small'] {
-		flex: 1;
-	}
-
-	/* Mobile: every paired row collapses to a single-column stack. */
+	/* Mobile frames stack every item full-width. */
 	@media (max-width: 768px) {
-		.row[data-kind='pair'] {
-			flex-direction: column;
-			align-items: stretch;
-		}
-
-		.row[data-kind='pair'] .cell {
-			flex: 1 1 100%;
-			width: 100%;
+		.cell {
+			grid-column: 1 / -1;
 		}
 	}
 </style>

@@ -14,6 +14,15 @@ body {
 	height: 100%;
 }
 
+/* Every `rem` in this codebase is written against a 20px base, e.g. 1.6rem is
+   annotated as 32px. `rem` resolves against the root element rather than body,
+   so the root has to carry that base — otherwise the whole type scale renders
+   at 80% of the Figma sizes. Expressed as a percentage rather than a fixed
+   20px so a reader who has raised their browser's default still scales up. */
+html {
+	font-size: 125%;
+}
+
 @font-face {
 	font-family: 'Hauss';
 	font-weight: 400;

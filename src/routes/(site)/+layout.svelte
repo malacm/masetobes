@@ -37,7 +37,9 @@
 <style>
 	.page {
 		min-height: 100vh;
-		padding: calc(var(--nav-pad-y) * 2 + 32px) var(--page-pad-x) 0;
+		/* Figma places the first block of content at y=235 on desktop and
+		   y=102 on mobile, measured from the top of the page. */
+		padding: var(--content-top) var(--page-pad-x) 0;
 	}
 
 	.page[data-home='true'] {

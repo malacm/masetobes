@@ -12,12 +12,26 @@ export type SanityFileRef = {
 	asset?: { _ref: string; _type: 'reference' };
 };
 
+/* Column span of a gallery item within the 12-column grid. `pair-large` and
+   `pair-small` predate the grid — they are still accepted so existing Sanity
+   content keeps rendering, and both resolve to a 6-column half. */
+export type GalleryItemLayout =
+	| 'full'
+	| 'two-thirds'
+	| 'large-half'
+	| 'half'
+	| 'small-half'
+	| 'third'
+	| 'pair-large'
+	| 'pair-small';
+
 export type GalleryItem = {
 	_key: string;
 	type: 'image' | 'svg' | 'video' | 'gif';
 	image?: SanityImageRef;
 	video?: SanityFileRef;
-	layout: 'full' | 'pair-large' | 'pair-small';
+	layout: GalleryItemLayout;
+	aspectRatio?: number;
 	caption?: string;
 };
 
@@ -58,6 +72,7 @@ export type WorkProject = {
 	instagramUrl?: string;
 	websiteUrl?: string;
 	thumbnailImage?: SanityImageRef;
+	thumbnailRatio?: number;
 	heroImage?: SanityImageRef;
 	heroVideo?: SanityFileRef;
 	heroVideoPoster?: SanityImageRef;
@@ -80,7 +95,7 @@ export type WorkProject = {
 
 export type WorkProjectListItem = Pick<
 	WorkProject,
-	'_id' | 'title' | 'slug' | 'thumbnailImage'
+	'_id' | 'title' | 'slug' | 'thumbnailImage' | 'thumbnailRatio' | 'infoBlocks'
 >;
 
 export type WorkProjectNeighbors = {

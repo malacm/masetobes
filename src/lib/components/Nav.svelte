@@ -56,7 +56,8 @@
 		z-index: 50;
 		display: flex;
 		justify-content: space-between;
-		align-items: center;
+		/* Name and pills sit on a shared baseline in the desktop frame. */
+		align-items: flex-end;
 		padding: var(--nav-pad-y) var(--nav-pad-x);
 		pointer-events: none;
 	}
@@ -69,12 +70,14 @@
 	.name {
 		font-weight: 700;
 		font-size: 1.6rem; /* 32px at 20px base */
+		line-height: 1.1;
+		letter-spacing: var(--track-tight);
 		color: var(--fg);
 	}
 
 	.links {
 		display: flex;
-		gap: 8px;
+		gap: var(--pill-gap);
 		align-items: center;
 	}
 
@@ -82,13 +85,17 @@
 		display: inline-flex;
 		align-items: center;
 		justify-content: center;
-		padding: 8px 16px;
-		border-radius: 8px;
+		height: 30px;
+		padding: 0 var(--pill-pad-x);
+		border-radius: var(--pill-radius);
 		background: var(--pill-bg);
+		backdrop-filter: blur(var(--pill-blur));
+		-webkit-backdrop-filter: blur(var(--pill-blur));
 		color: var(--pill-fg);
 		font-weight: 700;
-		font-size: 20px;
-		line-height: 1;
+		font-size: 1rem; /* 20px */
+		line-height: normal;
+		letter-spacing: var(--track-tight);
 	}
 
 	.pill-text {
@@ -98,25 +105,21 @@
 
 	.pill:hover .pill-text,
 	.pill.active .pill-text {
-		filter: blur(3px);
+		filter: blur(var(--text-blur));
 	}
 
-	@media (max-width: 600px) {
+	@media (max-width: 768px) {
 		.nav {
-			padding: 12px 16px;
+			align-items: center;
 		}
 
 		.name {
 			font-size: 1rem; /* 20px */
 		}
 
-		.links {
-			gap: 4px;
-		}
-
 		.pill {
-			padding: 6px 10px;
-			font-size: 0.8rem; /* 16px */
+			height: 21px;
+			font-size: 0.7rem; /* 14px */
 		}
 	}
 </style>

@@ -31,26 +31,40 @@ export const galleryItem = defineType({
 		defineField({
 			name: 'video',
 			title: 'Video file',
+			description:
+				'Leave empty to reserve the slot — the page renders a placeholder at the right size until a file is uploaded.',
 			type: 'file',
 			options: { accept: 'video/*' },
 			hidden: ({ parent }) => parent?.type !== 'video'
 		}),
 		defineField({
 			name: 'layout',
-			title: 'Layout',
+			title: 'Width',
 			description:
-				'Two adjacent "Half" items form a row. Large + Small in either order = ~62/38 split (smaller item sits at top of its cell with blank space below). Same size + same size = 50/50 split with true image sizes, bottom-aligned.',
+				'Items flow left-to-right and wrap onto a new row once 12 columns are filled — so Half + Half, Two-thirds + Third, or Third + Third + Third each make one row. Items in a row are top-aligned; a shorter item leaves blank space beneath it.',
 			type: 'string',
 			options: {
 				list: [
-					{ title: 'Full width', value: 'full' },
-					{ title: 'Half — large (paired)', value: 'pair-large' },
-					{ title: 'Half — small (paired)', value: 'pair-small' }
+					{ title: 'Full width — 12 columns', value: 'full' },
+					{ title: 'Two-thirds — 8 columns', value: 'two-thirds' },
+					{ title: 'Large half — 7 columns', value: 'large-half' },
+					{ title: 'Half — 6 columns', value: 'half' },
+					{ title: 'Small half — 5 columns', value: 'small-half' },
+					{ title: 'Third — 4 columns', value: 'third' }
 				],
 				layout: 'radio'
 			},
 			initialValue: 'full',
 			validation: (rule) => rule.required()
+		}),
+		defineField({
+			name: 'aspectRatio',
+			title: 'Aspect ratio (width ÷ height)',
+			description:
+				'Optional. Used to reserve space for video slots before a file is uploaded, e.g. 1.5 for 3:2, 0.75 for 3:4. Ignored once the video is in place.',
+			type: 'number',
+			validation: (rule) => rule.positive(),
+			hidden: ({ parent }) => parent?.type !== 'video'
 		}),
 		defineField({
 			name: 'caption',

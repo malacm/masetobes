@@ -1,6 +1,7 @@
 import { createImageUrlBuilder } from '@sanity/image-url';
 import type { SanityImageSource } from '@sanity/image-url';
 import { sanityConfig } from './client';
+import type { SanityImageRef } from './types';
 
 const builder = createImageUrlBuilder(sanityConfig);
 
@@ -29,6 +30,20 @@ export function imageSrcset(
 	return widths
 		.map((w) => `${builder.image(source).auto('format').fit('max').width(w).url()} ${w}w`)
 		.join(', ');
+}
+
+/**
+ * Width ÷ height of a Sanity image, read straight from the asset ref (which
+ * encodes the dimensions as `image-<hash>-1200x1500-jpg`). No network needed,
+ * so a layout can reserve the correct box on the very first render — which
+ * keeps images from collapsing to zero height before they load.
+ */
+export function imageAspectRatio(source: SanityImageRef | undefined | null): number | null {
+	const ref = source?.asset?._ref;
+	if (!ref) return null;
+	const [, w, h] = ref.match(/-(\d+)x(\d+)-\w+$/) ?? [];
+	if (!w || !h) return null;
+	return Number(w) / Number(h);
 }
 
 export function fileUrl(ref: string | undefined | null): string | null {

@@ -24,7 +24,7 @@
 import gsap from 'gsap';
 import { theme } from '$lib/stores/theme.svelte';
 
-const BG_ALT = '#7e8b6b';
+const BG_ALT = '#72805c';
 
 let isAnimating = false;
 let pulseAnim: gsap.core.Tween | null = null;
