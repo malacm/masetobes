@@ -23,28 +23,18 @@ html {
 	font-size: 125%;
 }
 
+/* The family ships as two webfont weights, Regular and Bold, and the Figma
+   designs only ever call for those two. Declaring weights with no file behind
+   them made the browser synthesise them instead, which is why type looked
+   subtly off across the site. */
 @font-face {
 	font-family: 'Hauss';
 	font-weight: 400;
 	font-style: normal;
 	font-display: swap;
-	src: url('/fonts/hauss-regular.woff2') format('woff2');
-}
-
-@font-face {
-	font-family: 'Hauss';
-	font-weight: 500;
-	font-style: normal;
-	font-display: swap;
-	src: url('/fonts/hauss-medium.woff2') format('woff2');
-}
-
-@font-face {
-	font-family: 'Hauss';
-	font-weight: 600;
-	font-style: normal;
-	font-display: swap;
-	src: url('/fonts/hauss-semibold.woff2') format('woff2');
+	src:
+		url('/fonts/hauss-regular.woff2') format('woff2'),
+		url('/fonts/hauss-regular.woff') format('woff');
 }
 
 @font-face {
@@ -52,15 +42,9 @@ html {
 	font-weight: 700;
 	font-style: normal;
 	font-display: swap;
-	src: url('/fonts/hauss-bold.woff2') format('woff2');
-}
-
-@font-face {
-	font-family: 'Hauss';
-	font-weight: 800;
-	font-style: normal;
-	font-display: swap;
-	src: url('/fonts/hauss-extrabold.woff2') format('woff2');
+	src:
+		url('/fonts/hauss-bold.woff2') format('woff2'),
+		url('/fonts/hauss-bold.woff') format('woff');
 }
 
 body {

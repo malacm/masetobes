@@ -27,3 +27,4 @@ vite.config.ts.timestamp-*
 
 # Design source assets — heavy PNG exports kept locally for reference, not versioned
 Portfolio — Web/
+.backups/

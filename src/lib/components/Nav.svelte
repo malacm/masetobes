@@ -21,7 +21,7 @@
 </script>
 
 <nav class="nav">
-	<a class="name" href="/">{name}</a>
+	<a class="name" class:concealed={aboutOverlay.open} href="/">{name}</a>
 
 	<ul class="links">
 		<li>
@@ -73,6 +73,10 @@
 		line-height: 1.1;
 		letter-spacing: var(--track-tight);
 		color: var(--fg);
+	}
+
+	.name.concealed {
+		visibility: hidden;
 	}
 
 	.links {

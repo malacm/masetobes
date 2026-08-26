@@ -16,9 +16,31 @@ export const siteSettings = defineType({
 		defineField({
 			name: 'aboutContent',
 			title: 'About content',
-			description: 'Bio + clients list shown in the about overlay.',
+			description:
+				'Bio + clients list shown in the about overlay. Use the bullet list for clients, and the "Accent" mark to put a phrase in the theme accent colour. Leave the contact line out — the overlay renders it itself so it can open the contact form.',
 			type: 'array',
-			of: [{ type: 'block' }]
+			of: [
+				{
+					type: 'block',
+					// Overriding `marks` replaces the defaults wholesale, so strong/em
+					// and the link annotation are restated alongside the new decorator.
+					marks: {
+						decorators: [
+							{ title: 'Strong', value: 'strong' },
+							{ title: 'Emphasis', value: 'em' },
+							{ title: 'Accent', value: 'accent' }
+						],
+						annotations: [
+							{
+								name: 'link',
+								type: 'object',
+								title: 'Link',
+								fields: [{ name: 'href', type: 'url', title: 'URL' }]
+							}
+						]
+					}
+				}
+			]
 		}),
 		defineField({
 			name: 'contactEmail',

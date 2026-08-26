@@ -39,22 +39,26 @@
 
 		<!-- Info blocks sit at columns 9 and 12 of the 12-column grid: their
 		     titles share the first row with the tagline, their items share the
-		     third row with the description. -->
-		{#each project.infoBlocks ?? [] as block, i (block._key)}
-			<section
-				class="info-block"
-				style:--col={9 + i * 3}
-				style:--span={i === 0 ? 3 : 1}
-				style:--mobile-order={4 + i}
-			>
-				<h3 class="info-title">{block.title}</h3>
-				<ul class="info-items">
-					{#each block.items ?? [] as item, j (j)}
-						<li>{item}</li>
-					{/each}
-				</ul>
-			</section>
-		{/each}
+		     third row with the description. On mobile they leave the grid and
+		     become a single `role … year` row below the header, so they are
+		     wrapped — the wrapper is `display: contents` on desktop, keeping
+		     both blocks direct children of the grid. -->
+		<div class="meta-row">
+			{#each project.infoBlocks ?? [] as block, i (block._key)}
+				<section
+					class="info-block"
+					style:--col={9 + i * 3}
+					style:--span={i === 0 ? 3 : 1}
+				>
+					<h3 class="info-title">{block.title}</h3>
+					<ul class="info-items">
+						{#each block.items ?? [] as item, j (j)}
+							<li>{item}</li>
+						{/each}
+					</ul>
+				</section>
+			{/each}
+		</div>
 
 		<hr class="rule" />
 
@@ -179,8 +183,9 @@
 		align-self: end;
 	}
 
-	/* Wrapper is transparent to the grid on desktop — title and items
+	/* Both wrappers are transparent to the grid on desktop — title and items
 	   become direct grid children and get positioned individually. */
+	.meta-row,
 	.info-block {
 		display: contents;
 	}
@@ -218,7 +223,18 @@
 		overflow-wrap: break-word;
 	}
 
-	.description :global(p) {
+	/* The statement's size belongs to the design, not to whichever block style
+	   the copy happens to carry — Dome's is authored as a heading in Sanity, and
+	   the browser's default `h1 { font-size: 2em }` was doubling it to 96px on
+	   mobile and 192px on desktop. */
+	.description :global(p),
+	.description :global(h1),
+	.description :global(h2),
+	.description :global(h3),
+	.description :global(h4) {
+		font-size: inherit;
+		font-weight: inherit;
+		line-height: inherit;
 		margin: 0;
 	}
 
@@ -238,8 +254,8 @@
 		margin: 0;
 	}
 
-	/* Mobile: stack everything in a single column. The info-blocks become
-	   flex rows so each title sits inline with its items. */
+	/* Mobile: title, rule and statement stack 8px apart, then role and year
+	   sit on one `space-between` row a section-break below them. */
 	@media (max-width: 768px) {
 		.top-grid {
 			display: flex;
@@ -264,22 +280,35 @@
 			font-size: 2.4rem; /* 48px */
 		}
 
-		.info-block {
+		.meta-row {
 			display: flex;
-			flex-wrap: wrap;
-			gap: 8px 12px;
-			align-items: baseline;
-			order: var(--mobile-order);
+			justify-content: space-between;
+			align-items: center;
+			order: 4;
+			/* The design sets 60px between the statement and this row; the
+			   column's own 8px gap supplies part of it. */
+			margin-top: calc(var(--section-gap) - 8px);
 		}
 
-		.info-title {
-			align-self: baseline;
+		.info-block {
+			display: flex;
+			align-items: center;
+			gap: 10px;
+		}
+
+		.info-title,
+		.info-items {
+			font-size: 0.6rem; /* 12px */
+			line-height: normal;
+			align-self: center;
 		}
 
 		.info-items {
 			flex-direction: row;
+			gap: 5px;
+			/* The design keeps this on one line. Wrapping is a safety valve for
+			   a project with more roles than any of the current seven. */
 			flex-wrap: wrap;
-			gap: 6px 12px;
 		}
 	}
 
@@ -360,6 +389,13 @@
 		margin-top: var(--gap-row);
 	}
 
+	@media (max-width: 768px) {
+		.hero,
+		.gallery-wrap {
+			margin-top: var(--gap-row);
+		}
+	}
+
 	.credits {
 		margin-top: var(--gap-row);
 		color: var(--fg);
@@ -397,6 +433,9 @@
 		justify-content: flex-end;
 		font-weight: 700;
 		text-transform: lowercase;
+		/* The design gives this row a 20px box at 20px type — body line-height
+		   was making it 28px and dropping the links 4px below the label. */
+		line-height: 1;
 	}
 
 	.credits-links a {
@@ -408,28 +447,29 @@
 		filter: blur(var(--text-blur));
 	}
 
-	/* Mobile: stack the credits section as Instagram + Website (side by side
-	   row at top), then "collaborators" label, then the names list. */
+	/* Mobile keeps the desktop shape rather than stacking: the label and the
+	   names sit inline on the left, the two links stay pinned right. */
 	@media (max-width: 768px) {
+		.credits {
+			font-size: 0.6rem; /* 12px */
+		}
+
 		.credits-grid {
 			display: flex;
-			flex-direction: column;
-			gap: 16px;
+			align-items: flex-start;
+			gap: 10px;
 		}
 
-		.credits-links {
-			order: 1;
-			justify-content: flex-start;
-			gap: 24px;
-		}
-
-		.credits-label {
-			order: 2;
-			margin-bottom: -8px;
-		}
-
+		.credits-label,
 		.credits-list {
-			order: 3;
+			line-height: normal;
+		}
+
+		/* Pushes the links to the right edge without needing the label and the
+		   names to be a nested wrapper of their own. */
+		.credits-links {
+			margin-left: auto;
+			gap: 10px;
 		}
 	}
 
@@ -475,12 +515,18 @@
 	}
 
 	@media (max-width: 768px) {
+		/* 30px pill + the 8px the design leaves before the closing rule. */
 		.pager {
-			min-height: 48px;
+			min-height: 38px;
 		}
 
+		/* Not the mobile nav pill: the design holds the 5px radius here and
+		   pads by 5px, where the nav drops to 3px/6px. */
 		.pager-link {
-			font-size: 1.1rem; /* 22px */
+			height: 30px;
+			padding: 0 5px;
+			border-radius: 5px;
+			font-size: 1rem; /* 20px */
 		}
 	}
 </style>

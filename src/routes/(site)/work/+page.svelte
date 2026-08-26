@@ -127,7 +127,12 @@
 		transition: opacity 180ms ease;
 	}
 
-	.link:hover .overlay,
+	@media (hover: hover) {
+		.link:hover .overlay {
+			opacity: 1;
+		}
+	}
+
 	.link:focus-visible .overlay {
 		opacity: 1;
 	}
@@ -154,7 +159,12 @@
 	}
 
 	/* The hover frame blurs the whole label row, title and plus together. */
-	.link:hover .caption,
+	@media (hover: hover) {
+		.link:hover .caption {
+			filter: blur(var(--text-blur));
+		}
+	}
+
 	.link:focus-visible .caption {
 		filter: blur(var(--text-blur));
 	}

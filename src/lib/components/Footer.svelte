@@ -34,9 +34,18 @@
 
 <style>
 	.footer {
+		/* Single source for the symbol → initials gap, so the asset and text
+		   paths cannot drift apart. --gap-col is the site's horizontal rhythm
+		   unit and already steps 20px → 10px at the mobile breakpoint. */
+		--symbol-gap: var(--gap-col);
+		/* Left side bearing of Hauss Bold "M", measured off the shipping font.
+		   The wordmark SVG is cropped flush to its ink, so the text fallback
+		   has to give this back to land on the same optical gap. */
+		--wordmark-lsb: 0.059em;
+
 		display: flex;
 		align-items: flex-end;
-		gap: 0;
+		gap: var(--symbol-gap);
 		padding: 80px var(--page-pad-x) 16px;
 		width: 100%;
 	}
@@ -59,7 +68,7 @@
 		display: flex;
 		align-items: stretch;
 		line-height: 0.78;
-		font-weight: 800;
+		font-weight: 700;
 		letter-spacing: -0.04em;
 		color: var(--fg);
 		min-width: 0;
@@ -68,6 +77,8 @@
 	.text {
 		font-size: 28vw;
 		flex: 1;
+		/* em, so the correction tracks the vw-scaled type at every width. */
+		margin-left: calc(-1 * var(--wordmark-lsb));
 	}
 
 	.year {

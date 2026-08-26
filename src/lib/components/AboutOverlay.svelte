@@ -2,6 +2,9 @@
 	import { aboutOverlay } from '$lib/stores/aboutOverlay.svelte';
 	import PortableText from './PortableText.svelte';
 	import ContactForm from './ContactForm.svelte';
+	import AccentMark from './portable/AccentMark.svelte';
+	import LinkMark from './portable/LinkMark.svelte';
+	import type { PortableTextComponents } from '@portabletext/svelte';
 	import type { PortableTextBlock } from '@portabletext/types';
 
 	type Props = {
@@ -10,6 +13,10 @@
 	};
 
 	const { content, contactEmail }: Props = $props();
+
+	const bioComponents: PortableTextComponents = {
+		marks: { accent: AccentMark, link: LinkMark }
+	};
 
 	function handleEmailClick(e: MouseEvent) {
 		e.preventDefault();
@@ -36,7 +43,7 @@
 				<ContactForm fallbackEmail={contactEmail} />
 			{:else}
 				<div class="bio">
-					<PortableText value={content} />
+					<PortableText value={content} components={bioComponents} />
 					{#if contactEmail}
 						<p class="contact">
 							Contact:
@@ -61,9 +68,9 @@
 	.backdrop {
 		position: absolute;
 		inset: 0;
-		background: rgba(0, 0, 0, 0.45);
-		backdrop-filter: blur(24px);
-		-webkit-backdrop-filter: blur(24px);
+		background: var(--overlay-bg);
+		backdrop-filter: blur(var(--overlay-blur));
+		-webkit-backdrop-filter: blur(var(--overlay-blur));
 		border: 0;
 		padding: 0;
 		cursor: pointer;
@@ -73,45 +80,54 @@
 		position: absolute;
 		inset: 0;
 		overflow-y: auto;
-		padding: 64px var(--page-pad-x);
+		padding: var(--page-pad-y) var(--page-pad-x);
 		pointer-events: none;
 	}
 
 	.bio,
 	:global(.panel .contact-form) {
 		pointer-events: auto;
+	}
+
+	:global(.panel .contact-form) {
 		max-width: 720px;
 	}
 
 	.bio {
-		font-size: 24px;
-		font-weight: 600;
+		font-size: 1.6rem; /* 32px */
+		font-weight: 700;
+		line-height: 1.1;
+		letter-spacing: var(--track-tight);
 		color: var(--fg);
-		display: flex;
-		flex-direction: column;
-		gap: 12px;
 	}
 
+	/* Blocks are separated by a blank line in the design, so the gap is one
+	   line of leading rather than an arbitrary pixel value. */
 	.bio :global(p) {
-		margin-bottom: 12px;
+		margin-bottom: 1.1em;
 	}
 
 	.bio :global(ul) {
 		display: flex;
 		flex-direction: column;
-		gap: 4px;
+		margin-bottom: 1.1em;
 	}
 
 	.bio :global(li)::before {
 		content: '• ';
 	}
 
-	.bio :global(a.inline-link),
 	.email-link {
 		color: var(--accent-link);
 	}
 
 	.contact {
-		margin-top: 12px;
+		margin-bottom: 0;
+	}
+
+	@media (max-width: 768px) {
+		.bio {
+			font-size: 1rem; /* 20px */
+		}
 	}
 </style>

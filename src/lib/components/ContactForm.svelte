@@ -94,7 +94,7 @@
 	.back {
 		align-self: flex-start;
 		color: var(--accent-link);
-		font-weight: 500;
+		font-weight: 400;
 		padding: 0;
 	}
 
@@ -105,7 +105,7 @@
 	}
 
 	label span {
-		font-weight: 600;
+		font-weight: 700;
 	}
 
 	input,
@@ -124,13 +124,17 @@
 		outline-offset: 1px;
 	}
 
+	/* Same frosted pill as the nav links and the prev/next pager — it was the
+	   only one carrying the pill colour without the blur behind it. */
 	.submit {
 		align-self: flex-start;
-		padding: 6px 14px;
-		border-radius: 8px;
+		padding: 6px var(--pill-pad-x);
+		border-radius: var(--pill-radius);
 		background: var(--pill-bg);
+		backdrop-filter: blur(var(--pill-blur));
+		-webkit-backdrop-filter: blur(var(--pill-blur));
 		color: var(--pill-fg);
-		font-weight: 600;
+		font-weight: 700;
 	}
 
 	.submit:disabled {

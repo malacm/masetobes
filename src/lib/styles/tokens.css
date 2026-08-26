@@ -12,6 +12,9 @@
 	--pill-fg: #a6bf86;
 	--accent-link: #a6bf86;
 	--rule: rgba(255, 255, 255, 0.3);
+	/* about overlay scrim — a light wash over the frosted page, not a dim */
+	--overlay-bg: rgba(255, 255, 255, 0.2);
+	--overlay-blur: 20px;
 
 	/* layout */
 	--page-pad-x: 20px;
@@ -47,6 +50,8 @@
 	--pill-fg: #ffc438;
 	--accent-link: #ffc438;
 	--rule: rgba(255, 255, 255, 0.3);
+	--overlay-bg: rgba(255, 255, 255, 0.2);
+	--overlay-blur: 20px;
 }
 
 /* Mobile frames are 402 wide with 10px padding, and the grid collapses to a
