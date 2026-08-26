@@ -2,6 +2,8 @@
 	import { tick } from 'svelte';
 	import { page } from '$app/state';
 	import { onNavigate, afterNavigate } from '$app/navigation';
+	import { startSmoothScroll, type SmoothScroll } from '$lib/animations/smoothScroll';
+	import 'lenis/dist/lenis.css';
 	import Nav from '$lib/components/Nav.svelte';
 	import Footer from '$lib/components/Footer.svelte';
 	import AboutOverlay from '$lib/components/AboutOverlay.svelte';
@@ -48,6 +50,18 @@
 	let active = $state(false);
 	let veilEl: HTMLDivElement | undefined = $state();
 
+	/* Smooth scrolling lives here rather than in the root layout so it never
+	   touches the Sanity Studio, which owns its own scrolling. */
+	let scroller: SmoothScroll | null = null;
+
+	$effect(() => {
+		scroller = startSmoothScroll();
+		return () => {
+			scroller?.destroy();
+			scroller = null;
+		};
+	});
+
 	onNavigate(async (navigation) => {
 		// Leaving the app entirely — the veil would just flash before the
 		// browser's own paint.
@@ -74,6 +88,12 @@
 	// Fires once the incoming page has rendered — including on first load, where
 	// nothing is armed and this is a no-op.
 	afterNavigate(() => {
+		// Both happen while the content is still covered, so the reader never
+		// sees the jump. Lenis caches the document height, so a page of a
+		// different length has to be re-measured or the scroll limit is wrong
+		// until the next resize.
+		scroller?.toTop();
+		scroller?.resize();
 		active = false;
 		// Hold the element on screen until the clearing ramp has finished, then
 		// drop the filter entirely. Skipped if another navigation re-armed it.

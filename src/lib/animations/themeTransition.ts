@@ -5,9 +5,11 @@
  * Mounted by HomepageIcon.svelte while it's in the DOM.
  *
  * Theme transition — when the user clicks any ThemeToggle, this orchestrates:
- *   1. The homepage icon "implodes" (scale + blur) so the about-to-swap image
- *      is unrecognizable when its src flips mid-animation — approximates a
- *      morph between the two icons without paid plugins.
+ *   1. The icon changes shape. When the inline morph path is available the two
+ *      marks genuinely morph into one another (see iconMorph.ts) and the icon
+ *      only dips slightly, so the change is legible. Without it — icons still
+ *      loading, or a fetch that failed — the icon implodes behind a heavy blur
+ *      instead, which is there purely to hide the hard cross-fade underneath.
  *   2. A radial color reveal:
  *      • Going TO alt (sage): a sage circle grows from a point at center to
  *        cover the viewport — "sage fills from the center out."
@@ -23,6 +25,7 @@
 
 import gsap from 'gsap';
 import { theme } from '$lib/stores/theme.svelte';
+import { addMorphToTimeline, hasMorphTargets } from './iconMorph';
 
 const BG_ALT = '#72805c';
 
@@ -114,18 +117,24 @@ export function playThemeTransition(): void {
 		}
 	});
 
-	// Icon morph-in — implode to a blurry, smaller blob.
+	// With a real morph running, the icon must stay readable — the old
+	// scale(0.5) + blur(30px) implode existed only to make the image swap
+	// unrecognisable, and it is exactly why the incoming mark looked like it
+	// appeared out of nowhere. A shallow dip keeps the site's blur character
+	// without hiding the thing we now actually want to be watched.
+	const morphing = hasMorphTargets();
+	const dip = morphing
+		? { scale: 0.92, filter: 'blur(6px)' }
+		: { scale: 0.5, filter: 'blur(30px)' };
+
 	if (icon) {
-		tl.to(
-			icon,
-			{
-				scale: 0.5,
-				filter: 'blur(30px)',
-				duration: 0.3,
-				ease: 'power2.in'
-			},
-			0
-		);
+		tl.to(icon, { ...dip, duration: 0.3, ease: 'power2.in' }, 0);
+	}
+
+	// The shape change spans the colour sweep and the theme flip, so the mark is
+	// still travelling as the page changes colour rather than resolving first.
+	if (morphing) {
+		addMorphToTimeline(tl, toAlt, 0.1, 0.75);
 	}
 
 	// Radial color reveal — sage grows from 0 (toAlt) or shrinks to 0 (toDefault).
@@ -149,17 +158,18 @@ export function playThemeTransition(): void {
 		}, 0.7);
 	}
 
-	// Icon morph-out — un-blur and scale back up.
+	// Icon settles — un-blur and scale back up. Held slightly later and longer
+	// when morphing so the dip releases as the shape finishes travelling.
 	if (icon) {
 		tl.to(
 			icon,
 			{
 				scale: 1,
 				filter: 'blur(0px)',
-				duration: 0.4,
+				duration: morphing ? 0.5 : 0.4,
 				ease: 'power2.out'
 			},
-			0.5
+			morphing ? 0.55 : 0.5
 		);
 	}
 }

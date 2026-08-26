@@ -412,22 +412,35 @@ Skipped entirely on `prefers-reduced-motion`, on same-path hash links, and when
 leaving the app (`navigation.willUnload`), where the veil would just flash before
 the browser's own paint.
 
-### Smooth scrolling — added, then removed
+### Smooth scrolling — Lenis, `lerp: 0.08`
 
-Lenis went in, felt "heavy and jittery", and came back out. The reference the
-client gave — <https://mouthwash.studio> — was inspected directly and **does not
-smooth-scroll at all**: no Lenis, no Locomotive, no GSAP `ScrollSmoother`
-wrapper, no transformed content element, `scroll-behavior: auto`, and the
-document scrolling natively. It carries GSAP 3.11.5, but for element animation.
+Removed once and put back. It was pulled after a "heavy and jittery" report,
+reasoning from the reference site: <https://mouthwash.studio> was inspected and
+genuinely does **not** smooth-scroll — no Lenis, no Locomotive, no GSAP
+`ScrollSmoother` wrapper, `scroll-behavior: auto`, document scrolling natively
+(it loads GSAP 3.11.5, but for element animation). So the glide there is native
+trackpad momentum.
 
-So the glide people read on that site is native trackpad momentum on a light
-page. Replacing that with a JS-interpolated approximation — on a site with
-several `backdrop-filter` surfaces, which are expensive to composite — is what
-produced the heaviness and the stutter. `lenis` is uninstalled and
-`smoothScroll.ts` is deleted; scrolling is native again.
+That was the wrong call. Mason's follow-up: the **weight** was fine — a little
+heavier was what he wanted — and the complaint was only the jitter. Lenis is back
+at `lerp: 0.08`, the heavier setting.
 
-Kept from that detour: `.nvmrc` pinned to `20.20.2` and `engines.node` declared,
-which fixed a genuine pre-existing block on `npm install`.
+The jitter is very likely not Lenis at all. Both rounds of that feedback were
+given while the dev server had fallen back to port 5174, where Sanity is
+CORS-blocked (see below): no content, no images, and a layout shifting under the
+scroll as things failed to load. That is what a stuttering scroll feels like.
+**Worth re-judging now that content actually loads.**
+
+Settings and guards, unchanged from before: touch left native (`syncTouch`
+default `false` — smoothing touch lags the finger), off under
+`prefers-reduced-motion`, started from the `(site)` layout so `/studio` keeps its
+own scrolling, `data-lenis-prevent` on the about panel, and `toTop()` + `resize()`
+in `afterNavigate` so a page of a different length is re-measured. `autoResize` is
+now explicit — a stale scroll limit while gallery images load late is a real
+source of the wheel feeling like it catches.
+
+Measured glide on a 1000px scroll: `0.08` → 90% in 0.50s; `0.10` (Lenis default)
+→ 0.42s; `0.15` → 0.28s.
 
 ### The page transition — three bugs, not a tuning problem
 
@@ -516,6 +529,78 @@ nothing else (`transform: none`, `filter: none` on every card), and no `y`,
 > never fired — GSAP's ticker is rAF-driven, so no tween could advance no matter
 > which tab was used. The property-level check above is solid; the *feel* of the
 > fade wants Mason's eye in a real browser.
+
+## Theme icon — a real morph, not a cross-fade
+
+The incoming mark looked like it spawned because it did: the two icons were
+stacked `<img>` tags cross-fading on opacity, behind a `scale(0.5)` +
+`blur(30px)` implode. **That blur existed specifically to hide the swap** — it
+was the cause of the complaint, not a flourish around it.
+
+Two findings shaped the fix:
+
+- **DrawSVG is the wrong tool for these icons.** It animates `stroke-dasharray`,
+  and all four icon files are fill-only — 5 paths in the default mark, 34 in the
+  alt, zero `stroke` attributes anywhere. There is nothing for it to draw.
+  **MorphSVG** is the one that transforms one filled outline into another.
+- **Both plugins are free now.** They shipped in the public `gsap` package from
+  3.13 under the standard license, so this needed no Club membership — the
+  installed 3.15.0 already had them.
+
+The real prerequisite was neither: an SVG loaded through `<img>` is opaque to the
+page, so its shapes cannot be touched. `iconMorph.ts` now fetches each icon as
+text (cdn.sanity.io allows it), folds its visible shapes into one path,
+normalises it out of its own viewBox into a shared 0–100 box — the two marks are
+498px and 400px natively — and hands it to MorphSVG.
+
+The icon dip dropped to `scale(0.92)` + `blur(6px)`: enough of the site's blur
+character to belong, little enough that the shape change is the thing you watch.
+Both toggles morph together, the homepage mark and the footer one.
+
+Everything degrades. If the fetch fails, the parse fails, or the shapes are
+unreadable, `loadIconShape` returns null and the old `<img>` cross-fade stays —
+with the heavy blur back, since in that case there *is* a swap to hide.
+
+### Verified
+
+- Morph path renders on both the homepage and footer toggles, with the `<img>`
+  fallback correctly suppressed and coordinates normalised into 0–100.
+- The morph genuinely interpolates. Stepping a paused tween — which needs no
+  frames, so the hidden preview could not distort it — gives five distinct
+  intermediate outlines across progress 0 → 1, landing exactly on the target.
+
+### The white square
+
+First cut drew a white plate behind the mark. Both homepage icons carry a
+full-viewBox `<rect fill="white">` inside a `<clipPath>` — a *definition*, which
+describes how other shapes are clipped and is never painted itself. The shape
+sweep collected it anyway and folded it into the combined path.
+
+Now anything inside `<defs>`, `<clipPath>`, `<mask>`, `<pattern>`, `<symbol>` or
+`<marker>` is skipped. Exactly one rect drops from each homepage icon; the footer
+mark has no `defs` and is untouched, which is why it never showed the square.
+
+A second guard skips any full-viewBox `<rect>` even outside a definition. It
+catches nothing today and is there so a future icon exported with a real backing
+plate cannot reintroduce this. On the point of colour: a plate could never be
+tinted to the theme here anyway — every subpath shares the single
+`fill="currentColor"` on the combined path, so it would always be the same colour
+as the ink. The right answer is to not include one.
+
+### Worth Mason's eye
+
+The default mark is 5 paths against the alt's 34, which is a wide ratio in
+subpath terms. MorphSVG pairs what it can and
+grows the surplus out of points, so 63 shapes bloom from the centre rather than
+appearing — which should read as the star unfurling into rings. That is the
+intended effect, but it is a wide ratio and it is the one thing I could not watch
+happen. If it reads as busy, the honest fix is art direction rather than code:
+pairing a chosen handful of alt paths against the 5 default ones and fading the
+rest, instead of morphing everything.
+
+Tuning lives in two places: the morph's position and duration in
+`themeTransition.ts` (`addMorphToTimeline(tl, toAlt, 0.1, 0.75)`), and the dip
+values next to it.
 
 ## What is actually left
 
