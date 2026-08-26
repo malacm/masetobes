@@ -1,17 +1,12 @@
 <script lang="ts">
 	import GalleryItem from './GalleryItem.svelte';
-	import { revealItems } from '$lib/animations/reveal';
 	import type { GalleryItem as GalleryItemType, GalleryItemLayout } from '$lib/sanity/types';
 
 	type Props = {
 		items: GalleryItemType[];
-		/** Holds back the on-load reveal so it can follow a header's stagger. */
-		revealDelay?: number;
-		/** Treat the opening row as part of the page's load animation. */
-		eagerFirstRow?: boolean;
 	};
 
-	const { items, revealDelay = 0, eagerFirstRow = false }: Props = $props();
+	const { items }: Props = $props();
 
 	/* Column spans, straight from the Figma widths at a 1400px content width:
 	   1400 / 927 / 808 / 690 / 572 / 453 px. Items auto-flow and wrap once a
@@ -55,25 +50,9 @@
 		}
 		return out;
 	});
-
-	/* Items filling the opening 12-column row. They sit side by side, so they
-	   have to arrive together — revealing one on load while its neighbour waits
-	   for a scrub would tear the row in half. */
-	const eagerCount = $derived.by(() => {
-		if (!eagerFirstRow) return 0;
-		let used = 0;
-		let count = 0;
-		for (const span of spans) {
-			if (used + span > 12) break;
-			used += span;
-			count += 1;
-			if (used === 12) break;
-		}
-		return count;
-	});
 </script>
 
-<div class="gallery" use:revealItems={{ delay: revealDelay, eager: eagerCount }}>
+<div class="gallery">
 	{#each items as item, i (item._key)}
 		<div class="cell" style:--span={spans[i]}>
 			<GalleryItem {item} />

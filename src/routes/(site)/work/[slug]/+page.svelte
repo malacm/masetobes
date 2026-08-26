@@ -2,11 +2,6 @@
 	import { imageUrl, imageSrcset, fileUrl } from '$lib/sanity/image';
 	import Gallery from '$lib/components/Gallery.svelte';
 	import PortableText from '$lib/components/PortableText.svelte';
-	import { reveal, revealItems, revealOnEnter, driftOnScroll } from '$lib/animations/reveal';
-
-	/* The header's seven elements stagger over ~0.42s; the first gallery row is
-	   on screen too, so it comes in just behind them as one arrival. */
-	const GALLERY_DELAY = 0.35;
 
 	let { data } = $props();
 
@@ -22,17 +17,7 @@
 </script>
 
 <article class="project">
-	<!-- The info blocks are `display: contents` on desktop, so the reveal has to
-	     target the leaf elements rather than the grid's direct children. -->
-	<div
-		class="top-grid"
-		use:driftOnScroll
-		use:revealItems={{
-			selector: '.tagline, .info-title, .info-items, .rule, .description',
-			stagger: 0.07,
-			motion: 'blur'
-		}}
-	>
+	<div class="top-grid">
 		{#if project.tagline}
 			<h1 class="tagline">{project.tagline}</h1>
 		{/if}
@@ -68,7 +53,7 @@
 	</div>
 
 	{#if hasHero}
-		<div class="hero" use:reveal={{ delay: GALLERY_DELAY, eager: 1 }}>
+		<div class="hero">
 			{#if project.heroVideo}
 				<video
 					class="hero-media"
@@ -112,16 +97,12 @@
 			<!-- Whichever comes first is the page's opening image and loads with
 			     the header: the hero when there is one, otherwise the gallery's
 			     first row. -->
-			<Gallery
-				items={project.galleryItems}
-				revealDelay={GALLERY_DELAY}
-				eagerFirstRow={!hasHero}
-			/>
+			<Gallery items={project.galleryItems} />
 		</div>
 	{/if}
 
 	{#if hasCredits}
-		<section class="credits" use:revealOnEnter>
+		<section class="credits">
 			<div class="credits-grid">
 				<div class="credits-label">collaborators</div>
 				<div class="credits-list">
@@ -141,7 +122,7 @@
 		</section>
 	{/if}
 
-	<nav class="pager" aria-label="project navigation" use:revealOnEnter>
+	<nav class="pager" aria-label="project navigation">
 		{#if neighbors.prev}
 			<a class="pager-link" href={`/work/${neighbors.prev.slug}`}>← prev</a>
 		{:else}

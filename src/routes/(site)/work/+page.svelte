@@ -1,6 +1,5 @@
 <script lang="ts">
 	import { imageUrl, imageSrcset } from '$lib/sanity/image';
-	import { revealItems } from '$lib/animations/reveal';
 	import type { WorkProjectListItem } from '$lib/sanity/types';
 
 	let { data } = $props();
@@ -14,7 +13,7 @@
 {#if data.projects.length === 0}
 	<p class="empty">no projects yet — head to <a href="/studio">/studio</a> to add one.</p>
 {:else}
-	<ul class="grid" use:revealItems={{ stagger: 0.1 }}>
+	<ul class="grid">
 		{#each data.projects as project (project._id)}
 			<li class="cell">
 				<a class="link" href={`/work/${project.slug.current}`}>

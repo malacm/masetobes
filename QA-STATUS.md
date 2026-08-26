@@ -22,12 +22,12 @@ Figma file key: `0XhYCJWc1hxW93a12xgnSa`
 | 5 | Hover state missing glass | Projects Collection | **already fixed** — verified by screenshot, thumbnail visibly blurred |
 | 6 | Overlay info type size vs Figma | Projects Collection | **done** — checked against node `1:39464`; the code already matched on every property |
 | 7 | Mobile hover: keep or remove? | Projects Collection | **done** — Mason chose remove; gated behind `@media (hover: hover)` |
-| 8 | Intro section vs Figma | Individual Project | **mobile done** (`1:38959` / `1:38964`); desktop (`1:98`) still to do |
-| 9 | Outro section vs Figma | Individual Project | **mobile done** (`1:39020` / `1:39028`); desktop (`1:205`, `1:223`) still to do |
+| 8 | Intro section vs Figma | Individual Project | **done** — mobile rebuilt (`1:38959`/`1:38964`); desktop (`1:98`) measured against the frame and already matched |
+| 9 | Outro section vs Figma | Individual Project | **done** — mobile rebuilt (`1:39020`/`1:39028`); desktop (`1:205`, `1:223`) measured and already matched |
 | 10 | Music player unresolved on mobile | Global/Menu | **done** — expansion was hover-only, so it was dead on touch |
 | 11 | Videos not loading | Global/Menu | **already fixed** — all report `readyState 4` |
 | 12 | Type styles inconsistent | Global/Menu | **done** — every type value audited against Figma across all 7 projects, both breakpoints |
-| 13 | Simpler entry animation, no movement | — | **blocked** — the two "like this / this" links are cell hyperlinks and do not survive CSV or HTML export. Ask Mason to paste them |
+| 13 | Simpler entry animation, no movement | — | **superseded** — scroll-driven motion removed entirely; replaced by a page-transition veil (see below) |
 
 ## Known Figma node IDs
 
@@ -360,11 +360,190 @@ video slots.
 Buck Mason slot 9 is still worth a check — `full` at 0.75 renders a 1400×1867
 portrait video, unlike every other full-width slot on the site.
 
-## Session 6 plan
+## Animation overhaul — no scroll motion, one page transition
 
-- #13 entry animation — still blocked on the two hyperlinks from the sheet
-- Contact form has no Figma frame at all; it is the one surface designed only in
-  code
+Supersedes the fade-on-trigger pass below. The client does not want content
+reacting to the reader moving through a page **at all**, so scroll-driven motion
+is gone rather than simplified. `src/lib/animations/reveal.ts` is deleted, along
+with every `use:reveal`, `use:revealItems`, `use:revealOnEnter` and
+`use:driftOnScroll` in the app. Nothing imports `ScrollTrigger` any more and
+there are no scroll listeners left. `gsap` stays only for the theme-toggle blur,
+which is not scroll-related.
+
+Dead code that went with it: `Gallery`'s `revealDelay` and `eagerFirstRow` props
+and the `eagerCount` first-row calculation, and the `GALLERY_DELAY` constant on
+the project page.
+
+**Scope note:** the brief said project index and individual projects, but the
+personal gallery ran the same reveals through `Gallery`. Leaving them there would
+have meant one page still animating on scroll, so it was included. Trivially
+reversible if that is wrong.
+
+### The replacement
+
+A single glass veil in `src/routes/(site)/+layout.svelte`, driven by SvelteKit's
+`onNavigate` / `afterNavigate`:
+
+1. click → `covering = true`, veil fades in over **220ms**
+2. `onNavigate` returns a promise that resolves at 220ms — SvelteKit holds the
+   DOM swap until then, so the new page is only ever revealed from behind a fully
+   opaque veil
+3. `afterNavigate` → `covering = false`, veil clears over **280ms**
+
+Out is slower than in on purpose: covering should feel decisive, uncovering
+should feel like it is getting out of the way.
+
+It is the site's own vocabulary — `background: var(--bg)` plus
+`backdrop-filter: blur(var(--veil-blur))`, the same treatment as the nav pills
+(10px), the work hover panel (15px) and the about overlay (20px). The new token
+sits at **16px**, between the pill glass and the overlay.
+
+Two details that make it read as seamless rather than as a page reload:
+
+- **z-index 25** — above the page content, *below* the music player (30) and the
+  nav (50). The persistent chrome stays sharp while the content frosts over, so
+  the change reads as one page rearranging itself. Confirmed visually: mid-fade
+  the nav pills and the player are crisp while the header and hero are soft.
+- **`position: fixed`** — the blur only ever costs the viewport, not the full
+  height of a 20,000px gallery. A filter on the content wrapper itself would have
+  forced the browser to rasterise the whole document.
+
+Skipped entirely on `prefers-reduced-motion`, on same-path hash links, and when
+leaving the app (`navigation.willUnload`), where the veil would just flash before
+the browser's own paint.
+
+### Smooth scrolling
+
+There was never any smooth scroll on this site — no `scroll-behavior`, no Lenis,
+no `ScrollSmoother`, in any of the six commits of history. What read as smooth
+was the old `scrub: 0.5` easing on the reveals, which was the content following
+the scroll, i.e. the thing being removed. So this is new work, not a restoration.
+
+`lenis@1.3.26`, started from the `(site)` layout in
+`src/lib/animations/smoothScroll.ts`:
+
+- `lerp: 0.08` — how hard the page chases the scroll each frame. Lenis ships
+  0.1; this is a touch softer for more drift. **Single constant, easy to tune.**
+- **Touch stays native** (`syncTouch` left at its default `false`). Smoothing
+  touch puts lag between finger and page, which reads as broken on a phone in a
+  way it never does with a wheel.
+- **Off under `prefers-reduced-motion`** — hijacking the scroll is precisely what
+  that preference asks you not to do.
+- Started in an `$effect` in the `(site)` layout, **not** the root layout, so the
+  Sanity Studio keeps its own scrolling. Verified: `/studio` has no `lenis` class.
+- The about overlay panel carries `data-lenis-prevent`, so it scrolls itself with
+  `overscroll-behavior: contain` instead of leaking to the page.
+- `afterNavigate` calls `toTop()` (immediate, no animated scroll-back) and
+  `resize()` — both behind the veil, and the resize matters because Lenis caches
+  document height and each project page is a different length.
+
+Note this is the only scroll-related behaviour left. It smooths *the scroll*; it
+does not animate content in response to scrolling.
+
+**Install/node — fixed.** `npm install` was blocked by an engine mismatch:
+`.npmrc` sets `engine-strict=true`, and `isomorphic-dompurify` (transitive via
+`sanity`) wants node `>=20.19.5` while the active shell had `v20.19.4`. nvm
+already had **v20.20.2** installed; `.nvmrc` just said `20`, which had resolved
+to the older one.
+
+- `.nvmrc` pinned to `20.20.2`
+- `engines.node: ">=20.19.5"` added to `package.json`, so a wrong version now
+  fails naming **this project** rather than a confusing transitive dependency
+
+Verified: `nvm use` in the project picks v20.20.2, and `npm install` completes
+with no flags and `engine-strict` left on. `.npmrc` was never modified.
+
+### Verified
+
+- Lenis attaches on `/`, `/work`, `/personal` and not on `/studio`. `lenis.css`
+  is live — `html` computes to `4668px` on /work and `21768px` on /personal,
+  its `height: auto` overriding `reset.css`'s `height: 100%`.
+- Navigating from `/work` at y=800 lands on `/work/dome` at y=0, veil back to
+  idle, Lenis still attached.
+- Home is unaffected: body stays `overflow: hidden` with no scroll range.
+
+### The glide, measured
+
+The preview tab reports `visibilityState: "hidden"`, so `requestAnimationFrame`
+never fires and Lenis — which is entirely rAF-driven — cannot animate there. So
+rather than eyeball it, the frame loop was driven directly with synthetic 60fps
+timestamps against an isolated scroll container, which needs no rAF at all.
+
+A 1000px glide, measured in this browser:
+
+| `lerp` | to 90% | to 99% | |
+|---|---|---|---|
+| 0.15 | 0.28s | 0.53s | snappy |
+| 0.10 | 0.42s | 0.80s | Lenis default |
+| **0.08** | **0.50s** | **0.98s** | **shipped** |
+
+Per-frame progress at 0.08 runs 0.077 → 0.148 → 0.213 → 0.274, a clean
+decelerating ease rather than a linear ramp. So the easing is confirmed working
+and the glide is about 20% longer than Lenis's default, which is the "glidy"
+end of the range without drifting into feeling disconnected.
+
+That is the curve, not the feel — a trackpad in a real window is still the final
+word, and `LERP` is the one number to turn.
+
+- Every route — `/`, `/work`, `/work/dome`, `/work/nusa-cana`, `/personal` —
+  renders with all content at `opacity: 1`, no inline animation styles and no
+  transforms. 148 elements checked across the five.
+- A real click through `/work` → `/work/dome` recorded the full sequence:
+  veil covers → path changes behind it → veil clears.
+- The veil resolves to `fixed`, `z-index: 25`, `blur(16px)`, `pointer-events: none`.
+
+A side benefit: with no rAF-driven animation gating first paint, the preview
+finally screenshots reliably, which is how the frosted mid-transition state above
+was confirmed.
+
+## Earlier pass — entry animation reduced to a fade (superseded)
+
+Mason's call: remove all scaling and movement, leave a fade tied to the trigger.
+`src/lib/animations/reveal.ts` now animates **opacity and nothing else**.
+
+What went:
+
+- the `MOTION` table entirely — `blur` (y 48/22, blur 14/7) and `scale`
+  (y 32/16, scale 0.94/0.96) presets, and the `motion` option that picked between
+  them
+- the scrub window (`top bottom` → `top 35%`), which bound progress to scroll
+  position. Below-fold items now fire once at `top 85%` with
+  `toggleActions: 'play none none reverse'`. A scrubbed opacity leaves content
+  half-transparent while you read it, which is the quality the simpler treatment
+  is meant to remove
+- `driftOnScroll`'s upward travel and blur on the way out. It keeps the opacity
+  fade so the header still hands off to the gallery — the one place opacity stays
+  scroll-bound, because it is an exit that tracks the reader rather than an
+  arrival
+
+What stayed: the staggered on-load arrival for anything on the first screen, the
+`eager` opt-in for the opening image, the reduced-motion bail-out, and the
+`ScrollTrigger.refresh()` on image load.
+
+This is global — work index, project pages and the personal gallery all use these
+actions, so the whole site's entry motion changed together.
+
+Verified at the property level: GSAP now writes `opacity` and `visibility` and
+nothing else (`transform: none`, `filter: none` on every card), and no `y`,
+`scale`, `blur` or `filter` remains anywhere in the module.
+
+> Not visually confirmed. The in-app preview pane was hidden for this pass, so
+> the tab reported `document.visibilityState: "hidden"` and `requestAnimationFrame`
+> never fired — GSAP's ticker is rAF-driven, so no tween could advance no matter
+> which tab was used. The property-level check above is solid; the *feel* of the
+> fade wants Mason's eye in a real browser.
+
+## What is actually left
+
+Nothing in code. All 13 sheet items are closed. The only outstanding work is
+**content**: the 24 video clips listed above, which Mason uploads in `/studio`.
+
+Two open questions that need Mason, neither blocking:
+
+- Special_Place_Green pair order — desktop and mobile frames disagree (see above)
+- Buck Mason gallery slot 9, `full` at ratio 0.75
+- The contact form has no Figma frame at all; it is the one surface designed only
+  in code
 
 ## #7 — removed on mobile
 
