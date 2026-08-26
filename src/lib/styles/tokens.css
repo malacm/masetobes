@@ -15,10 +15,13 @@
 	/* about overlay scrim — a light wash over the frosted page, not a dim */
 	--overlay-bg: rgba(255, 255, 255, 0.2);
 	--overlay-blur: 20px;
-	/* page-transition veil. Sits between the pill glass (10px) and the about
-	   overlay (20px) — enough to read as frost at full strength without going
-	   milky on the way through. */
-	--veil-blur: 16px;
+	/* Page-transition veil. The fill MUST stay translucent: an opaque fill paints
+	   over the backdrop-filter result and the blur never shows at all, which
+	   turns the whole transition into a dark-on-dark fade you can barely see.
+	   At 0.72 over a 28px blur the outgoing page is unreadable — enough to hide
+	   the DOM swap — while the frost is still visibly doing the work. */
+	--veil-bg: rgba(35, 31, 32, 0.72);
+	--veil-blur: 28px;
 
 	/* layout */
 	--page-pad-x: 20px;
@@ -56,7 +59,8 @@
 	--rule: rgba(255, 255, 255, 0.3);
 	--overlay-bg: rgba(255, 255, 255, 0.2);
 	--overlay-blur: 20px;
-	--veil-blur: 16px;
+	--veil-bg: rgba(114, 128, 92, 0.72);
+	--veil-blur: 28px;
 }
 
 /* Mobile frames are 402 wide with 10px padding, and the grid collapses to a

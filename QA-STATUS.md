@@ -412,78 +412,62 @@ Skipped entirely on `prefers-reduced-motion`, on same-path hash links, and when
 leaving the app (`navigation.willUnload`), where the veil would just flash before
 the browser's own paint.
 
-### Smooth scrolling
+### Smooth scrolling — added, then removed
 
-There was never any smooth scroll on this site — no `scroll-behavior`, no Lenis,
-no `ScrollSmoother`, in any of the six commits of history. What read as smooth
-was the old `scrub: 0.5` easing on the reveals, which was the content following
-the scroll, i.e. the thing being removed. So this is new work, not a restoration.
+Lenis went in, felt "heavy and jittery", and came back out. The reference the
+client gave — <https://mouthwash.studio> — was inspected directly and **does not
+smooth-scroll at all**: no Lenis, no Locomotive, no GSAP `ScrollSmoother`
+wrapper, no transformed content element, `scroll-behavior: auto`, and the
+document scrolling natively. It carries GSAP 3.11.5, but for element animation.
 
-`lenis@1.3.26`, started from the `(site)` layout in
-`src/lib/animations/smoothScroll.ts`:
+So the glide people read on that site is native trackpad momentum on a light
+page. Replacing that with a JS-interpolated approximation — on a site with
+several `backdrop-filter` surfaces, which are expensive to composite — is what
+produced the heaviness and the stutter. `lenis` is uninstalled and
+`smoothScroll.ts` is deleted; scrolling is native again.
 
-- `lerp: 0.08` — how hard the page chases the scroll each frame. Lenis ships
-  0.1; this is a touch softer for more drift. **Single constant, easy to tune.**
-- **Touch stays native** (`syncTouch` left at its default `false`). Smoothing
-  touch puts lag between finger and page, which reads as broken on a phone in a
-  way it never does with a wheel.
-- **Off under `prefers-reduced-motion`** — hijacking the scroll is precisely what
-  that preference asks you not to do.
-- Started in an `$effect` in the `(site)` layout, **not** the root layout, so the
-  Sanity Studio keeps its own scrolling. Verified: `/studio` has no `lenis` class.
-- The about overlay panel carries `data-lenis-prevent`, so it scrolls itself with
-  `overscroll-behavior: contain` instead of leaking to the page.
-- `afterNavigate` calls `toTop()` (immediate, no animated scroll-back) and
-  `resize()` — both behind the veil, and the resize matters because Lenis caches
-  document height and each project page is a different length.
+Kept from that detour: `.nvmrc` pinned to `20.20.2` and `engines.node` declared,
+which fixed a genuine pre-existing block on `npm install`.
 
-Note this is the only scroll-related behaviour left. It smooths *the scroll*; it
-does not animate content in response to scrolling.
+### The page transition — three bugs, not a tuning problem
 
-**Install/node — fixed.** `npm install` was blocked by an engine mismatch:
-`.npmrc` sets `engine-strict=true`, and `isomorphic-dompurify` (transitive via
-`sanity`) wants node `>=20.19.5` while the active shell had `v20.19.4`. nvm
-already had **v20.20.2** installed; `.nvmrc` just said `20`, which had resolved
-to the older one.
+It read as "instant loading" because it largely *was* invisible:
 
-- `.nvmrc` pinned to `20.20.2`
-- `engines.node: ">=20.19.5"` added to `package.json`, so a wrong version now
-  fails naming **this project** rather than a confusing transitive dependency
+1. **The fill was opaque.** `background: var(--bg)` painted straight over the
+   `backdrop-filter` result, so the blur never rendered at all. What was left was
+   a dark fade against a dark page — nearly imperceptible. The fill is now
+   `--veil-bg`, `rgba(…, 0.72)`.
+2. **Fading opacity defeats a backdrop-filter.** Animating the element's opacity
+   blends the filtered backdrop with the unfiltered one, so at half opacity the
+   page underneath is still sharp and the frost only arrives in the last instant.
+   Opacity now stays at 1 and the **blur radius** is what animates, so the page
+   visibly defocuses.
+3. **220/280ms was too quick to register.** Now 380ms in, 520ms out, on
+   `cubic-bezier(0.6, 0, 0.35, 1)` and `cubic-bezier(0.22, 1, 0.36, 1)`. Blur
+   raised 16px → 28px.
 
-Verified: `nvm use` in the project picks v20.20.2, and `npm install` completes
-with no flags and `engine-strict` left on. `.npmrc` was never modified.
+Because a permanently-on `backdrop-filter` costs a viewport compositing pass on
+every scrolled frame — the exact thing that made Lenis feel bad — the veil runs
+two states: `armed` puts it on screen doing nothing, `active` runs the ramp. At
+rest it carries no filter and is `visibility: hidden`.
+
+Mouthwash does the same kind of thing: a fixed `#loader` curtain at z-index
+100000 over `rgba(0,0,0,0.1)`, and a header on `opacity 0.35s`.
+
+**One bug found and fixed during this pass:** the `armed → active` handoff first
+used `requestAnimationFrame` to commit the `from` state. rAF does not fire in a
+background tab, which left the veil armed at blur(0) and stuck there permanently.
+It now forces a style flush by reading `offsetHeight`, which is deterministic.
 
 ### Verified
 
-- Lenis attaches on `/`, `/work`, `/personal` and not on `/studio`. `lenis.css`
-  is live — `html` computes to `4668px` on /work and `21768px` on /personal,
-  its `height: auto` overriding `reset.css`'s `height: 100%`.
-- Navigating from `/work` at y=800 lands on `/work/dome` at y=0, veil back to
-  idle, Lenis still attached.
-- Home is unaffected: body stays `overflow: hidden` with no scroll range.
-
-### The glide, measured
-
-The preview tab reports `visibilityState: "hidden"`, so `requestAnimationFrame`
-never fires and Lenis — which is entirely rAF-driven — cannot animate there. So
-rather than eyeball it, the frame loop was driven directly with synthetic 60fps
-timestamps against an isolated scroll container, which needs no rAF at all.
-
-A 1000px glide, measured in this browser:
-
-| `lerp` | to 90% | to 99% | |
-|---|---|---|---|
-| 0.15 | 0.28s | 0.53s | snappy |
-| 0.10 | 0.42s | 0.80s | Lenis default |
-| **0.08** | **0.50s** | **0.98s** | **shipped** |
-
-Per-frame progress at 0.08 runs 0.077 → 0.148 → 0.213 → 0.274, a clean
-decelerating ease rather than a linear ramp. So the easing is confirmed working
-and the glide is about 20% longer than Lenis's default, which is the "glidy"
-end of the range without drifting into feeling disconnected.
-
-That is the curve, not the feel — a trackpad in a real window is still the final
-word, and `LERP` is the one number to turn.
+- No Lenis anywhere: `html.className` is empty and scrolling is native again.
+- A real click runs the whole veil lifecycle in order —
+  `hidden → armed → armed+active → armed → hidden` — ending clean with no filter
+  left on the element.
+- `backdrop-filter` was confirmed to render in this environment (a control
+  element blurred half the viewport), so the weak frost was a real bug rather
+  than a capture artifact.
 
 - Every route — `/`, `/work`, `/work/dome`, `/work/nusa-cana`, `/personal` —
   renders with all content at `opacity: 1`, no inline animation styles and no

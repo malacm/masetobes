@@ -1,8 +1,7 @@
 <script lang="ts">
+	import { tick } from 'svelte';
 	import { page } from '$app/state';
 	import { onNavigate, afterNavigate } from '$app/navigation';
-	import { startSmoothScroll, type SmoothScroll } from '$lib/animations/smoothScroll';
-	import 'lenis/dist/lenis.css';
 	import Nav from '$lib/components/Nav.svelte';
 	import Footer from '$lib/components/Footer.svelte';
 	import AboutOverlay from '$lib/components/AboutOverlay.svelte';
@@ -24,49 +23,63 @@
 	  because the veil is `position: fixed` the blur only ever costs the viewport,
 	  not the full height of a 20,000px gallery.
 
-	  Out is a little slower than in: covering should feel decisive, uncovering
-	  should feel like it is getting out of the way.
+	  The first version ran 220/280ms and faded the element's opacity. Both were
+	  wrong. 220ms is too quick to register, and — the real bug — fading an
+	  element that carries a `backdrop-filter` blends the filtered backdrop with
+	  the unfiltered one, so at half opacity the page underneath is still sharp.
+	  The frost only ever arrived in the last instant, which is why the whole
+	  thing read as content vanishing and reappearing rather than dissolving.
+
+	  So the element's opacity now stays at 1 throughout and the **blur radius**
+	  is what animates. The page visibly defocuses, and the wash arrives with it.
+
+	  Two states rather than one, because a `backdrop-filter` that is always on
+	  costs a compositing pass on every frame the reader scrolls: `armed` puts
+	  the element on screen doing nothing (blur 0), `active` runs the ramp. At
+	  rest it carries no filter at all.
+
+	  Out is slower than in: covering should feel decisive, uncovering should feel
+	  like it is getting out of the way.
 	*/
-	const VEIL_IN_MS = 220;
+	const VEIL_IN_MS = 380;
+	const VEIL_OUT_MS = 520;
 
-	let covering = $state(false);
+	let armed = $state(false);
+	let active = $state(false);
+	let veilEl: HTMLDivElement | undefined = $state();
 
-	/* Smooth scrolling lives here rather than in the root layout so it never
-	   touches the Sanity Studio, which owns its own scrolling. */
-	let scroller: SmoothScroll | null = null;
-
-	$effect(() => {
-		scroller = startSmoothScroll();
-		return () => {
-			scroller?.destroy();
-			scroller = null;
-		};
-	});
-
-	onNavigate((navigation) => {
-		// Leaving the app entirely — the veil would just flash before a white
-		// browser paint.
+	onNavigate(async (navigation) => {
+		// Leaving the app entirely — the veil would just flash before the
+		// browser's own paint.
 		if (navigation.willUnload) return;
 		// Same-page hash links swap no content.
 		if (navigation.to?.url.pathname === navigation.from?.url.pathname) return;
 		if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
 
-		covering = true;
+		armed = true;
+		// The `from` state has to be committed before the `to` state is set, or
+		// there is nothing to interpolate and the frost snaps on. `tick()` gets
+		// the class into the DOM; reading a layout property then forces the style
+		// flush. Deliberately not `requestAnimationFrame` — that never fires in a
+		// background tab, which left the veil armed at blur(0) and stuck there.
+		await tick();
+		void veilEl?.offsetHeight;
+		active = true;
+
 		// SvelteKit holds the DOM swap until this resolves, so the new page is
-		// only ever revealed from behind a fully opaque veil.
+		// only ever revealed from behind a fully frosted veil.
 		return new Promise((resolve) => setTimeout(resolve, VEIL_IN_MS));
 	});
 
 	// Fires once the incoming page has rendered — including on first load, where
-	// `covering` is already false and this is a no-op.
+	// nothing is armed and this is a no-op.
 	afterNavigate(() => {
-		// Both happen while the veil still covers, so the reader never sees the
-		// jump. Lenis caches the document height, so a taller or shorter page
-		// has to be re-measured or the scroll range is wrong until the next
-		// resize event.
-		scroller?.toTop();
-		scroller?.resize();
-		covering = false;
+		active = false;
+		// Hold the element on screen until the clearing ramp has finished, then
+		// drop the filter entirely. Skipped if another navigation re-armed it.
+		setTimeout(() => {
+			if (!active) armed = false;
+		}, VEIL_OUT_MS);
 	});
 </script>
 
@@ -76,48 +89,92 @@
 
 <Nav name={settings?.name} />
 
-<main class="page" data-home={isHome}>
+<main class="page" class:leaving={active} data-home={isHome}>
 	{@render children()}
 </main>
 
 {#if !isHome}
-	<Footer
-		wordmark={settings?.footerWordmark}
-		wordmarkAsset={settings?.footerWordmarkAsset}
-		iconDefault={settings?.themeIconFooterDefault ?? settings?.themeIconDefault}
-		iconAlt={settings?.themeIconFooterAlt ?? settings?.themeIconAlt}
-	/>
+	<div class="footer-wrap" class:leaving={active}>
+		<Footer
+			wordmark={settings?.footerWordmark}
+			wordmarkAsset={settings?.footerWordmarkAsset}
+			iconDefault={settings?.themeIconFooterDefault ?? settings?.themeIconDefault}
+			iconAlt={settings?.themeIconFooterAlt ?? settings?.themeIconAlt}
+		/>
+	</div>
 {/if}
 
 <MusicPlayer tracks={settings?.playlist ?? []} collapsible={!isHome} />
 
 <AboutOverlay content={settings?.aboutContent} contactEmail={settings?.contactEmail} />
 
-<div class="veil" class:covering aria-hidden="true"></div>
+<div class="veil" class:armed class:active bind:this={veilEl} aria-hidden="true"></div>
 
 <style>
 	/* Above the page content, below the two pieces of persistent chrome — the
 	   music player (30) and the nav (50). Those stay sharp while the content
 	   swaps underneath, which is what makes the change read as one page
 	   rearranging itself rather than a whole new document arriving. */
+	/* The content's own fade is what actually carries the transition. The veil
+	   alone could not: its wash is `--bg`, the same colour as the page, so over
+	   the large empty areas of a sparse dark page it changed nothing and the
+	   whole thing read as an instant load. Opacity is visible whatever is
+	   underneath, and on a wrapper it is compositor-only, so fading a
+	   20,000px gallery costs nothing. The veil's blur rides on top of it and
+	   supplies the glass character while the content is still visible. */
+	.page,
+	.footer-wrap {
+		opacity: 1;
+		transition: opacity 520ms cubic-bezier(0.22, 1, 0.36, 1);
+	}
+
+	.page.leaving,
+	.footer-wrap.leaving {
+		opacity: 0;
+		transition-duration: 380ms;
+		transition-timing-function: cubic-bezier(0.6, 0, 0.35, 1);
+	}
+
+	@media (prefers-reduced-motion: reduce) {
+		.page,
+		.footer-wrap {
+			transition: none;
+		}
+	}
+
 	.veil {
 		position: fixed;
 		inset: 0;
 		z-index: 25;
-		background: var(--bg);
-		backdrop-filter: blur(var(--veil-blur));
-		-webkit-backdrop-filter: blur(var(--veil-blur));
-		opacity: 0;
 		pointer-events: none;
-		transition: opacity 280ms ease-out;
+		/* No filter and nothing painted at rest, so a reader who is just
+		   scrolling never pays for a viewport-sized compositing pass. */
+		visibility: hidden;
+		background-color: transparent;
 	}
 
-	.veil.covering {
-		opacity: 1;
-		/* Matches VEIL_IN_MS above: the cover has to be complete before the DOM
-		   swaps, or the reader sees the old page cut to the new one. */
-		transition-duration: 220ms;
-		transition-timing-function: ease-in;
+	/* On screen, but doing nothing yet — this is the `from` state the ramp
+	   interpolates out of. */
+	.veil.armed {
+		visibility: visible;
+		backdrop-filter: blur(0px);
+		-webkit-backdrop-filter: blur(0px);
+		/* Uncovering: quintic ease-out, so the new page is legible early and the
+		   last of the frost lifts off it. */
+		transition:
+			background-color 520ms cubic-bezier(0.22, 1, 0.36, 1),
+			backdrop-filter 520ms cubic-bezier(0.22, 1, 0.36, 1),
+			-webkit-backdrop-filter 520ms cubic-bezier(0.22, 1, 0.36, 1);
+	}
+
+	.veil.armed.active {
+		background-color: var(--veil-bg);
+		backdrop-filter: blur(var(--veil-blur));
+		-webkit-backdrop-filter: blur(var(--veil-blur));
+		/* Matches VEIL_IN_MS: the cover has to be complete before the DOM swaps,
+		   or the reader sees the old page cut to the new one. */
+		transition-duration: 380ms;
+		transition-timing-function: cubic-bezier(0.6, 0, 0.35, 1);
 	}
 
 	@media (prefers-reduced-motion: reduce) {

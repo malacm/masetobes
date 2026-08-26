@@ -38,16 +38,7 @@
 			aria-label="Close about overlay"
 			onclick={() => aboutOverlay.hide()}
 		></button>
-		<!-- Lenis drives the window scroll; this panel scrolls itself, so it opts
-		     out and keeps native overflow. -->
-		<div
-			class="panel"
-			data-lenis-prevent
-			role="dialog"
-			aria-modal="true"
-			aria-label="About"
-			tabindex="-1"
-		>
+		<div class="panel" role="dialog" aria-modal="true" aria-label="About" tabindex="-1">
 			{#if aboutOverlay.view === 'form'}
 				<ContactForm fallbackEmail={contactEmail} />
 			{:else}
