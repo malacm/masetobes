@@ -1,9 +1,9 @@
-import type { LayoutLoad } from './$types';
+import type { LayoutServerLoad } from './$types';
 import { safeFetch } from '$lib/sanity/client';
 import { siteSettingsQuery } from '$lib/sanity/queries';
 import type { SiteSettings } from '$lib/sanity/types';
 
-export const load: LayoutLoad = async () => {
+export const load: LayoutServerLoad = async () => {
 	try {
 		const siteSettings = await safeFetch<SiteSettings>(siteSettingsQuery);
 		return { siteSettings };

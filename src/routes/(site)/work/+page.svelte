@@ -114,8 +114,9 @@
 		justify-content: space-between;
 		padding: 20px;
 		background: var(--pill-bg);
-		backdrop-filter: blur(15px);
+		/* prefixed first — see the note on --pill-blur in tokens.css */
 		-webkit-backdrop-filter: blur(15px);
+		backdrop-filter: blur(15px);
 		color: var(--fg);
 		font-size: 0.8rem; /* 16px at 20px base */
 		font-weight: 700;

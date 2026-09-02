@@ -182,8 +182,9 @@
 		padding: 0 var(--pill-pad-x);
 		border-radius: var(--pill-radius);
 		background: var(--pill-bg);
-		backdrop-filter: blur(var(--pill-blur));
+		/* prefixed first — see the note on --pill-blur in tokens.css */
 		-webkit-backdrop-filter: blur(var(--pill-blur));
+		backdrop-filter: blur(var(--pill-blur));
 		color: var(--pill-fg);
 		font-weight: 700;
 		font-size: 1rem; /* 20px */
@@ -235,8 +236,9 @@
 		height: 56px;
 		border-radius: 50%;
 		background: var(--pill-bg);
-		backdrop-filter: blur(var(--pill-blur));
+		/* prefixed first — see the note on --pill-blur in tokens.css */
 		-webkit-backdrop-filter: blur(var(--pill-blur));
+		backdrop-filter: blur(var(--pill-blur));
 		color: var(--pill-fg);
 		display: flex;
 		align-items: center;
@@ -270,8 +272,9 @@
 		padding: 0 16px;
 		border-radius: var(--pill-radius);
 		background: var(--pill-bg);
-		backdrop-filter: blur(var(--pill-blur));
+		/* prefixed first — see the note on --pill-blur in tokens.css */
 		-webkit-backdrop-filter: blur(var(--pill-blur));
+		backdrop-filter: blur(var(--pill-blur));
 		color: var(--pill-fg);
 		font-weight: 700;
 		font-size: 0.9rem; /* 18px */

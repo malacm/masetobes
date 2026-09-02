@@ -472,8 +472,9 @@
 		padding: 0 var(--pill-pad-x);
 		border-radius: var(--pill-radius);
 		background: var(--pill-bg);
-		backdrop-filter: blur(var(--pill-blur));
+		/* prefixed first — see the note on --pill-blur in tokens.css */
 		-webkit-backdrop-filter: blur(var(--pill-blur));
+		backdrop-filter: blur(var(--pill-blur));
 		color: var(--pill-fg);
 		font-size: 2rem; /* 40px */
 		font-weight: 700;

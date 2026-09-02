@@ -177,8 +177,9 @@
 	   interpolates out of. */
 	.veil.armed {
 		visibility: visible;
-		backdrop-filter: blur(0px);
+		/* prefixed first — see the note on --pill-blur in tokens.css */
 		-webkit-backdrop-filter: blur(0px);
+		backdrop-filter: blur(0px);
 		/* Uncovering: quintic ease-out, so the new page is legible early and the
 		   last of the frost lifts off it. */
 		transition:
@@ -189,8 +190,9 @@
 
 	.veil.armed.active {
 		background-color: var(--veil-bg);
-		backdrop-filter: blur(var(--veil-blur));
+		/* prefixed first — see the note on --pill-blur in tokens.css */
 		-webkit-backdrop-filter: blur(var(--veil-blur));
+		backdrop-filter: blur(var(--veil-blur));
 		/* Matches VEIL_IN_MS: the cover has to be complete before the DOM swaps,
 		   or the reader sees the old page cut to the new one. */
 		transition-duration: 380ms;

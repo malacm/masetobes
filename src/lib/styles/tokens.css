@@ -40,6 +40,12 @@
 	/* pills — nav links and the prev/next pager share one treatment */
 	--pill-radius: 5px;
 	--pill-pad-x: 10px;
+	/* Every backdrop-filter in the codebase is written -webkit- first, standard
+	   second. Vite 8 minifies CSS with lightningcss, which merges the two into
+	   one prefixed property; in the other order (standard first) it drops the
+	   standard declaration entirely, leaving -webkit-backdrop-filter alone —
+	   honoured by Safari, ignored by Chrome and Firefox. That is why the glass
+	   only ever showed on iPhones. Keep the order. */
 	--pill-blur: 10px;
 	--pill-gap: 10px;
 	--text-blur: 3px;

@@ -73,10 +73,27 @@
 		line-height: 1.1;
 		letter-spacing: var(--track-tight);
 		color: var(--fg);
+		/* Fades out as the about overlay frosts in and back as it clears, on the
+		   overlay's own clock (see src/lib/animations/frost.ts). `visibility` is
+		   held until the fade has finished so the hidden name never takes focus. */
+		transition:
+			opacity 520ms cubic-bezier(0.22, 1, 0.36, 1),
+			visibility 0s;
 	}
 
 	.name.concealed {
+		opacity: 0;
 		visibility: hidden;
+		transition:
+			opacity 380ms cubic-bezier(0.6, 0, 0.35, 1),
+			visibility 0s 380ms;
+	}
+
+	@media (prefers-reduced-motion: reduce) {
+		.name,
+		.name.concealed {
+			transition: none;
+		}
 	}
 
 	.links {
@@ -93,8 +110,9 @@
 		padding: 0 var(--pill-pad-x);
 		border-radius: var(--pill-radius);
 		background: var(--pill-bg);
-		backdrop-filter: blur(var(--pill-blur));
+		/* prefixed first — see the note on --pill-blur in tokens.css */
 		-webkit-backdrop-filter: blur(var(--pill-blur));
+		backdrop-filter: blur(var(--pill-blur));
 		color: var(--pill-fg);
 		font-weight: 700;
 		font-size: 1rem; /* 20px */

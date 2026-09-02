@@ -4,6 +4,7 @@
 	import ContactForm from './ContactForm.svelte';
 	import AccentMark from './portable/AccentMark.svelte';
 	import LinkMark from './portable/LinkMark.svelte';
+	import { frost, reveal } from '$lib/animations/frost';
 	import type { PortableTextComponents } from '@portabletext/svelte';
 	import type { PortableTextBlock } from '@portabletext/types';
 
@@ -26,17 +27,31 @@
 	function handleKey(e: KeyboardEvent) {
 		if (e.key === 'Escape') aboutOverlay.hide();
 	}
+
+	/* The bio sits on top of the glass and would otherwise swallow clicks, so a
+	   click on it that is not on a link closes the overlay just as the glass
+	   does. A click that ends a text selection is left alone — copying the
+	   email address should not dismiss the page. */
+	function handleBioClick(e: MouseEvent) {
+		if ((e.target as Element).closest('a')) return;
+		if (window.getSelection()?.toString()) return;
+		aboutOverlay.hide();
+	}
 </script>
 
 <svelte:window onkeydown={handleKey} />
 
 {#if aboutOverlay.open}
 	<div class="overlay-root">
+		<!-- Frosts in and clears out like the page veil; see frost.ts. The block
+		     stays mounted until both outros finish. -->
 		<button
 			class="backdrop"
 			type="button"
 			aria-label="Close about overlay"
 			onclick={() => aboutOverlay.hide()}
+			in:frost
+			out:frost
 		></button>
 		<!-- Lenis drives the window scroll; this panel scrolls itself, so it opts
 		     out and keeps native overflow. -->
@@ -47,11 +62,16 @@
 			aria-modal="true"
 			aria-label="About"
 			tabindex="-1"
+			in:reveal
+			out:reveal
 		>
 			{#if aboutOverlay.view === 'form'}
 				<ContactForm fallbackEmail={contactEmail} />
 			{:else}
-				<div class="bio">
+				<!-- Pointer convenience only: keyboard users have Escape and the
+				     backdrop button, so no key handler or role is needed here. -->
+				<!-- svelte-ignore a11y_no_static_element_interactions, a11y_click_events_have_key_events -->
+				<div class="bio" onclick={handleBioClick}>
 					<PortableText value={content} components={bioComponents} />
 					{#if contactEmail}
 						<p class="contact">
@@ -78,8 +98,9 @@
 		position: absolute;
 		inset: 0;
 		background: var(--overlay-bg);
-		backdrop-filter: blur(var(--overlay-blur));
+		/* prefixed first — see the note on --pill-blur in tokens.css */
 		-webkit-backdrop-filter: blur(var(--overlay-blur));
+		backdrop-filter: blur(var(--overlay-blur));
 		border: 0;
 		padding: 0;
 		cursor: pointer;

@@ -12,7 +12,7 @@ Personal portfolio for Mason Tobia. SvelteKit + TypeScript front-end, Sanity CMS
    - `RESEND_API_KEY` — from resend.com/api-keys
    - `RESEND_FROM_EMAIL` — a verified sender on Resend (the `onboarding@resend.dev` sandbox works for testing)
    - `CONTACT_TO_EMAIL` — Mason's email address (where contact-form messages get delivered)
-4. Add the dev server origin to Sanity CORS in sanity.io/manage → API → CORS origins (add `http://localhost:5173`, allow credentials).
+4. Optional: add the dev server origin to Sanity CORS in sanity.io/manage → API → CORS origins (e.g. `http://localhost:5173`). Content is fetched server-side so this is not required for pages to load; it only enables the theme-icon morph, which fetches the icon SVGs from Sanity’s CDN in the browser and falls back to a cross-fade without it.
 5. Run dev: `npm run dev`. The site lives at `/`, the CMS at `/studio`.
 
 ## Routes
