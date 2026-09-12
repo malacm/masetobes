@@ -75,6 +75,8 @@
 		row-gap: var(--section-gap);
 		align-items: end;
 		width: 100%;
+		/* Section break before the footer's rule, as on the project page. */
+		margin-bottom: var(--section-gap);
 	}
 
 	.cell {
@@ -92,6 +94,11 @@
 		width: 100%;
 		overflow: hidden;
 		background: rgba(0, 0, 0, 0.2);
+		/* Makes the frame the backdrop root for the hover panel, so the blur
+		   samples the thumbnail directly. WebKit can otherwise lose the
+		   backdrop-filter on a child of an `overflow: hidden` box and paint the
+		   wash flat; Chrome renders the same either way. */
+		isolation: isolate;
 	}
 
 	/* Absolute so the thumbnail's own proportions can't stretch the box — the

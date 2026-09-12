@@ -45,6 +45,7 @@ export const workProjectBySlugQuery = /* groq */ `
   heroImage,
   heroVideo,
   heroVideoPoster,
+  heroAspectRatio,
   heroLogo,
   heroLogoPosition,
   heroLogoWidth,

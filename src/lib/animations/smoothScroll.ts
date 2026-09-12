@@ -19,6 +19,7 @@
  * native scrolling.
  */
 import Lenis from 'lenis';
+import { scrollState } from '$lib/stores/scrollState.svelte';
 
 /**
  * How hard the page chases the scroll position each frame, 0–1. Lower glides
@@ -29,6 +30,20 @@ import Lenis from 'lenis';
  * 0.10 in 0.42s, 0.15 in 0.28s.
  */
 const LERP = 0.08;
+
+/**
+ * Scroll speed, in px per frame, above which the gallery videos pause.
+ *
+ * Measured on the Dome page at 120Hz, 2x: with the videos decoding, every
+ * flick past ~100px/frame dropped frames, and the same scroll with playback
+ * disabled dropped none — images, blurs and Lenis itself were all ruled out.
+ * A decoding video competes with the compositor for exactly the frames a fast
+ * scroll needs. Freezing them on their current frame is invisible at that
+ * speed; they resume as the page settles. Hysteresis keeps a glide from
+ * flickering between the two states.
+ */
+const FAST_PX_PER_FRAME = 60;
+const SETTLED_PX_PER_FRAME = 20;
 
 export type SmoothScroll = {
 	/** Re-measure after the document height changes. */
@@ -51,6 +66,12 @@ export function startSmoothScroll(): SmoothScroll | null {
 		autoResize: true
 	});
 
+	lenis.on('scroll', ({ velocity }) => {
+		const speed = Math.abs(velocity);
+		if (speed > FAST_PX_PER_FRAME) scrollState.fast = true;
+		else if (speed < SETTLED_PX_PER_FRAME) scrollState.fast = false;
+	});
+
 	// One loop, created once. A second rAF loop driving the same instance is a
 	// classic source of stutter — each would advance the tween by its own delta.
 	let frame = requestAnimationFrame(function raf(time: number) {
@@ -66,6 +87,7 @@ export function startSmoothScroll(): SmoothScroll | null {
 		destroy: () => {
 			cancelAnimationFrame(frame);
 			lenis.destroy();
+			scrollState.fast = false;
 		}
 	};
 }

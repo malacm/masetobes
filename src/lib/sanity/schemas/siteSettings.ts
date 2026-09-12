@@ -88,7 +88,7 @@ export const siteSettings = defineType({
 			name: 'footerWordmarkAsset',
 			title: 'Footer wordmark (SVG)',
 			description:
-				'Upload the full wordmark graphic — MGT + ©year baked in — as a single SVG. Sits to the right of the footer theme icon and scales to fill the remaining width.',
+				'Upload the MGT initials only, as a single SVG, with no year in it — the site sets @year inside the T itself so it can be sized per breakpoint. Sits to the right of the footer theme icon and scales to fill the remaining width.',
 			type: 'image',
 			options: { accept: 'image/svg+xml,image/*' }
 		}),

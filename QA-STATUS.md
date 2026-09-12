@@ -11,6 +11,11 @@ Figma file key: `0XhYCJWc1hxW93a12xgnSa`
 > items were already fixed locally before the pass began. Re-test against `main`
 > before treating anything below as outstanding.
 
+> **Round 2 (12 Sep 2026).** The sheet grew to 18 rows and nine came back
+> "Incomplete". Every one is closed in code except the video *content* — see
+> "Round 2" at the end. Before/after captures for the client are in the
+> shared report (artifact link in the session summary).
+
 ## Item status
 
 | # | Item | Page | Status |
@@ -629,3 +634,134 @@ query, so the info stays reachable by keyboard.
 used to live here was stale. Verified against Sanity: all seven work projects
 have a tagline, description, two info blocks (role + year), collaborators, and
 both an Instagram and a website URL. #8 and #9 have all the data they need.
+
+## Round 2 — the nine "Incomplete" rows (12 Sep 2026)
+
+Sheet rows are the client's numbering (row 1 = first inquiry).
+
+| row | item | status |
+|---|---|---|
+| 2 | Scroll stuttering (desktop) | **done** — gallery videos now pause while the page is flung; see below |
+| 3 | Symbol and initials not aligned in footer | **done** — footer rebuilt on the frame's proportions, symbol vertically centred |
+| 4 | Footer: extra space below rule and logo, bigger @year in the T (mobile) | **done** — 8px / 10px rhythm from the frame; year is live type at 10px |
+| 5 | Rule missing above footer on /work and /personal | **done** — rule moved from the pager into the footer itself |
+| 7 | About overlay glass not full-screen (mobile) | **done** — backdrop is `100lvh`, reaches under Safari's toolbar |
+| 9 | Hover glass missing (work index, desktop) | **matches Figma** — `rgba(246,246,246,.2)` + 15px blur, both here and in the build; `isolation: isolate` added on the frame as a WebKit safeguard |
+| 14 | Music player same as homepage everywhere | **done** — corner fan removed, the bottom-centre pills render on every page |
+| 15 | Videos not loading | **content** — 22 gallery slots + Nusa Caña hero still have no file; every uploaded clip plays (see below) |
+| 17 | Dark overlay on the home icon when tapped (mobile, green) | **done** — iOS tap highlight, now transparent |
+
+### Row 2 — where the stutter actually comes from
+
+Measured in Chrome on the Dome page (120Hz display, 2x), counting frames over
+25ms during a 2400px wheel fling. Everything but one variable was ruled out:
+
+| condition | frames >25ms |
+|---|---|
+| Lenis fling, as shipped | 20 of 329 (spaced wheel), 46 of 76 (burst) |
+| plain `scrollTo` per frame, 22px | 0 |
+| plain `scrollTo`, 100px/frame | 4 |
+| same, fractional offsets | 0 |
+| same, toggling a class on `<html>` each frame | 0 |
+| same, backdrop-filters disabled | 4 |
+| same, images hidden | 5 |
+| **same, video playback disabled** | **0** |
+| same, all videos playing continuously | 5 |
+
+It is the videos decoding while the page moves fast — not Lenis, not the blur
+pills, not image decode. So `smoothScroll.ts` reads Lenis's per-frame velocity
+into a tiny `scrollState` store (fast above 60px/frame, settled below 20), and
+`GalleryItem` pauses its video while `fast` is true. A paused video costs
+nothing to composite; it holds its frame through the fling and resumes as the
+page settles. Lenis, `lerp`, and the wheel feel are untouched.
+
+Worth knowing: the in-app browser pane stops running `requestAnimationFrame`
+when it is not the visible panel, and headless Chrome caps at 30fps, so the
+"after" run could not be re-measured in the same session — but the fix puts
+the flinging page in exactly the "playback disabled" row above.
+
+### Rows 3, 4, 5 — the footer, rebuilt on the frame
+
+Measured off `1:38334` (desktop Dome) and `1:38719` (mobile Dome), confirmed
+on the work and personal frames:
+
+| | desktop (1400 content) | mobile (382 content) |
+|---|---|---|
+| symbol | 348.96 (24.93%) | 95.22 (24.93%) |
+| symbol → M | 38.66 (2.76%) | 10.55 (2.76%) |
+| MGT | 1012.38 (72.31%) | 276.24 (72.31%) |
+| rule → wordmark | 20 (26 on project pages) | 8 |
+| wordmark → page bottom | 20 | 10 |
+| symbol vs wordmark | centred: 6.5px inside the G's overshoot | same |
+| @year | Hauss Bold 20px at x 92.5% / y 21.4% of MGT | 10px at 94.2% / 22.3% |
+
+Same three ratios on both frames, so the footer is one grid:
+`24.926% / 2.761% / 1fr`, `align-items: center`. The icon was `25vw` and
+bottom-aligned, the gap was 20px, and the top padding was 80px on both
+breakpoints against the frame's 20 / 8.
+
+The rule now belongs to `Footer.svelte` (`border-top`), not the pager's
+`border-bottom` — that is why `/work` and `/personal` never had one. The pager
+keeps its 87px / 38px height so the rule lands where it did on project pages;
+the index pages get `margin-bottom: var(--section-gap)` on their content.
+
+**The year.** The uploaded wordmark had "@2025" drawn into the T as a path, so
+it scaled with the letters — ~10px of unreadable ink on a phone, where the frame
+wants it at almost twice that share. `scripts/set-footer-wordmark.mjs` uploaded
+`scripts/assets/footer-MGT-no-year.svg` (the same file with that one path
+removed) and the footer sets `@{year}` as vertical type, `cqw`-sized off the
+wordmark's own width. Schema description updated so a future upload leaves the
+T empty. Desktop rule→wordmark is 20 everywhere; the Dome frame's 26 is the
+one 6px this does not match.
+
+### Row 7 — about overlay on iOS
+
+Reproduced in the iOS Simulator (iPhone 17): the glass stopped above Safari's
+bottom toolbar and the toolbar is translucent, so a strip of sharp page showed
+through. A fixed `inset: 0` box on iOS is the *small* viewport. The backdrop is
+now `position: fixed; height: 100lvh` (100vh fallback), which reaches under
+the toolbar; the scrolling panel keeps the small viewport so its last line is
+never hidden.
+
+### Row 9 — hover glass
+
+Figma `1:39463` is `bg-[rgba(246,246,246,0.2)]` + `backdrop-blur-[15px]`;
+`work/+page.svelte` has exactly that, and the production CSS keeps both the
+`-webkit-` and standard properties (checked in `.svelte-kit/output`). Chrome
+renders it (captured). Not reproducible here; `isolation: isolate` on `.frame`
+makes the thumbnail the backdrop root, which is the known WebKit workaround
+for a blur child inside an `overflow: hidden` box. If Mason still sees it flat,
+it needs a browser + OS version.
+
+### Row 14 — one player
+
+`MusicPlayer.svelte` lost the `collapsible` fan-out (no Figma node ever
+existed for it). Every page renders the home pill row, fixed bottom-centre. It
+overlaps the wordmark at the very bottom of inner pages — a consequence of the
+ask, not a bug.
+
+### Row 15 — video content, not code
+
+Sanity today: DOME 5/5 clips uploaded, Potato Head Music hero uploaded. Still
+empty: Buck Mason 2, Little Sun 7, Nusa Caña 3 (+ its hero), Potato Head Music
+5, WHR 5 — 22 gallery slots, all rendering the dashed "video" placeholder. Every
+clip that *is* uploaded reports `readyState 4` and plays, in Chrome and in the
+iOS Simulator. Nothing to fix in code until the files exist.
+
+### Row 17 — tap highlight
+
+iOS paints its tap highlight over the tapped element's box; on the 320px home
+icon in the sage theme that is a visible dark square on every click.
+`-webkit-tap-highlight-color: transparent` on `a, button` in `reset.css`. Could
+not be captured in the Simulator (it dismisses before a screenshot lands) —
+the fix is the standard one.
+
+### Session notes
+
+- `vercel env pull` had rewritten `.env` with **empty** Sanity tokens; reads
+  still worked because the dataset is public, so nothing failed until the first
+  upload. `set-playlist.mjs` and `set-footer-wordmark.mjs` now abort early on a
+  blank token and accept `SANITY_API_WRITE_TOKEN` from the shell.
+- Figma desktop Dev Mode server answers raw JSON-RPC on `127.0.0.1:3845/mcp`
+  (initialize → `mcp-session-id` header → `tools/call`); `get_metadata` on the
+  section ids from page `0:1` is the fastest way to find frame ids.

@@ -124,7 +124,7 @@
 	</div>
 {/if}
 
-<MusicPlayer tracks={settings?.playlist ?? []} collapsible={!isHome} />
+<MusicPlayer tracks={settings?.playlist ?? []} />
 
 <AboutOverlay content={settings?.aboutContent} contactEmail={settings?.contactEmail} />
 

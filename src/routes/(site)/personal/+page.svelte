@@ -9,10 +9,17 @@
 {#if items.length === 0}
 	<p class="empty">no items yet — head to <a href="/studio">/studio</a> to add some.</p>
 {:else}
-	<Gallery {items} />
+	<!-- Section break before the footer's rule, as on the project page. -->
+	<div class="gallery-wrap">
+		<Gallery {items} />
+	</div>
 {/if}
 
 <style>
+	.gallery-wrap {
+		margin-bottom: var(--section-gap);
+	}
+
 	.empty {
 		font-size: 18px;
 		color: var(--fg);

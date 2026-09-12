@@ -76,6 +76,7 @@ export type WorkProject = {
 	heroImage?: SanityImageRef;
 	heroVideo?: SanityFileRef;
 	heroVideoPoster?: SanityImageRef;
+	heroAspectRatio?: number;
 	heroLogo?: SanityImageRef;
 	heroLogoPosition?:
 		| 'top-left'

@@ -95,8 +95,14 @@
 	}
 
 	.backdrop {
-		position: absolute;
+		position: fixed;
 		inset: 0;
+		/* iOS Safari sizes a fixed `inset: 0` box to the visible area above its
+		   toolbar, and the toolbar is translucent, so a strip of sharp page
+		   showed through under it. The large-viewport height reaches under the
+		   toolbar; 100vh is the same thing on iOS and the fallback elsewhere. */
+		height: 100vh;
+		height: 100lvh;
 		background: var(--overlay-bg);
 		/* prefixed first — see the note on --pill-blur in tokens.css */
 		-webkit-backdrop-filter: blur(var(--overlay-blur));

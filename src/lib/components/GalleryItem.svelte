@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { imageUrl, imageSrcset, imageAspectRatio, fileUrl } from '$lib/sanity/image';
+	import { scrollState } from '$lib/stores/scrollState.svelte';
 	import type { GalleryItem } from '$lib/sanity/types';
 
 	type Props = { item: GalleryItem };
@@ -31,26 +32,30 @@
 	// Prefer the ratio recorded on the item; fall back to what the file reports.
 	const videoRatio = $derived(item.aspectRatio ?? measuredRatio);
 
-	// Play only while on screen, and pause on the way out — keeps gallery
-	// scroll smooth even with many videos.
+	// Track whether the video is on screen; playback is decided below.
 	$effect(() => {
 		if (!videoEl || !videoRef) return;
-		const el = videoEl;
 		const observer = new IntersectionObserver(
 			([entry]) => {
 				isVisible = entry.isIntersecting;
-				if (entry.isIntersecting) {
-					// Best-effort: works when the video is already buffered.
-					// A cold start is caught by the oncanplay handler below.
-					el.play().catch(() => {});
-				} else {
-					el.pause();
-				}
 			},
 			{ rootMargin: '200px 0px', threshold: 0 }
 		);
-		observer.observe(el);
+		observer.observe(videoEl);
 		return () => observer.disconnect();
+	});
+
+	// Play only while on screen and while the page is not being flung. A video
+	// that is decoding costs the compositor frames during a fast scroll — that
+	// was the stutter — so it holds its current frame until the scroll settles.
+	// Best-effort: works once the video is buffered; a cold start is caught by
+	// the oncanplay handler below.
+	const shouldPlay = $derived(isVisible && !scrollState.fast);
+
+	$effect(() => {
+		if (!videoEl || !videoRef) return;
+		if (shouldPlay) videoEl.play().catch(() => {});
+		else videoEl.pause();
 	});
 
 	function handleLoadedMetadata() {
@@ -63,7 +68,7 @@
 	// the viewport, kick off playback — closes the race condition where the
 	// IO callback's play() ran before the new src had been applied to the DOM.
 	function handleCanPlay() {
-		if (isVisible && videoEl?.paused) {
+		if (shouldPlay && videoEl?.paused) {
 			videoEl.play().catch(() => {});
 		}
 	}

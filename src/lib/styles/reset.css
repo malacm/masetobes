@@ -96,6 +96,9 @@ a {
    fallback if SVG cursors aren't supported. */
 a,
 button {
+	/* iOS paints a grey flash over the tapped element's box; on the 320px home
+	   icon it read as a dark overlay on every click. */
+	-webkit-tap-highlight-color: transparent;
 	cursor: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 10 10"><circle cx="5" cy="5" r="5" fill="%23f6f6f6"/></svg>')
 			5 5,
 		pointer;

@@ -99,6 +99,14 @@ export const workProject = defineType({
 			hidden: ({ parent }) => !parent?.heroVideo
 		}),
 		defineField({
+			name: 'heroAspectRatio',
+			title: 'Hero aspect ratio',
+			description:
+				'Optional. Width ÷ height of the hero box, e.g. 1.497 for the 2800×1870 frame. The media is cropped to fill it. Leave empty to use the poster or image\'s own proportions — a video with no poster falls back to 1.497.',
+			type: 'number',
+			validation: (rule) => rule.min(0.2).max(5)
+		}),
+		defineField({
 			name: 'heroLogo',
 			title: 'Hero logo overlay',
 			description: 'Optional. SVG/PNG layered on top of the hero media (e.g. a wordmark).',

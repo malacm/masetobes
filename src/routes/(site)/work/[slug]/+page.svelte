@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { imageUrl, imageSrcset, fileUrl } from '$lib/sanity/image';
+	import { imageUrl, imageSrcset, imageAspectRatio, fileUrl } from '$lib/sanity/image';
 	import Gallery from '$lib/components/Gallery.svelte';
 	import PortableText from '$lib/components/PortableText.svelte';
 
@@ -14,6 +14,21 @@
 	);
 
 	const hasHero = $derived(Boolean(project.heroVideo || project.heroImage));
+
+	/* The hero box in the frames is 2800×1870 (Dome, Potato Head Music) or
+	   2800×1575 (Nusa Caña). An image hero always carried that shape in its
+	   own pixels; a video does not — Potato Head's clip is 1080×1350, and at
+	   full width that ran 1750px tall. So the box owns the ratio and the media
+	   is cropped to fill it: the Studio value if set, else the poster (a frame
+	   of the video, exported at the design size), else the image, else the
+	   frame's most common shape. */
+	const DEFAULT_HERO_RATIO = 1.497;
+	const heroRatio = $derived(
+		project.heroAspectRatio ??
+			(project.heroVideo ? imageAspectRatio(project.heroVideoPoster) : null) ??
+			imageAspectRatio(project.heroImage) ??
+			DEFAULT_HERO_RATIO
+	);
 </script>
 
 <article class="project">
@@ -53,7 +68,7 @@
 	</div>
 
 	{#if hasHero}
-		<div class="hero">
+		<div class="hero" style:aspect-ratio={heroRatio}>
 			{#if project.heroVideo}
 				<video
 					class="hero-media"
@@ -296,12 +311,18 @@
 	.hero {
 		position: relative;
 		margin-top: var(--section-gap);
+		width: 100%;
+		overflow: hidden;
 	}
 
+	/* Fills the box whatever the file's own proportions; see heroRatio. */
 	.hero-media {
+		position: absolute;
+		inset: 0;
 		display: block;
 		width: 100%;
-		height: auto;
+		height: 100%;
+		object-fit: cover;
 	}
 
 	.hero-logo {
@@ -454,15 +475,15 @@
 		}
 	}
 
-	/* Prev/next are pills in the same treatment as the nav links, with a rule
-	   87px below the top of the row closing the page off before the footer. */
+	/* Prev/next are pills in the same treatment as the nav links. The footer
+	   draws the closing rule; the row's height puts it 87px below the top of
+	   the pills, as in the frame. */
 	.pager {
 		display: flex;
 		justify-content: space-between;
 		align-items: flex-start;
 		margin-top: var(--section-gap);
 		min-height: 87px;
-		border-bottom: 0.5px solid var(--rule);
 	}
 
 	.pager-link {
