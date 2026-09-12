@@ -32,8 +32,15 @@ export type GalleryItem = {
 	video?: SanityFileRef;
 	layout: GalleryItemLayout;
 	aspectRatio?: number;
+	/* Video only: set the footage on a flat colour panel — 3:2 for a desktop
+	   or browser recording, 3:4 for a phone recording. */
+	frame?: GalleryItemFrame;
+	/* Hex colour of that panel; the site's cream when unset. */
+	frameColor?: string;
 	caption?: string;
 };
+
+export type GalleryItemFrame = 'none' | 'landscape' | 'portrait';
 
 export type InfoBlock = {
 	_key: string;

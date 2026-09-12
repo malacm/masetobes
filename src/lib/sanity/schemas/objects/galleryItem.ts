@@ -38,6 +38,36 @@ export const galleryItem = defineType({
 			hidden: ({ parent }) => parent?.type !== 'video'
 		}),
 		defineField({
+			name: 'frame',
+			title: 'Frame',
+			description:
+				'Sets the video on a flat colour panel instead of edge to edge. Landscape is the 3:2 panel for browser / desktop recordings; Portrait is the 3:4 panel for phone recordings.',
+			type: 'string',
+			options: {
+				list: [
+					{ title: 'None — video fills its slot', value: 'none' },
+					{ title: 'Landscape panel (3:2) — desktop / browser recording', value: 'landscape' },
+					{ title: 'Portrait panel (3:4) — phone recording', value: 'portrait' }
+				],
+				layout: 'radio'
+			},
+			initialValue: 'none',
+			hidden: ({ parent }) => parent?.type !== 'video'
+		}),
+		defineField({
+			name: 'frameColor',
+			title: 'Frame colour',
+			description: 'Hex colour of the panel behind the video. Leave empty for the default cream (#F1F0E8).',
+			type: 'string',
+			placeholder: '#F1F0E8',
+			validation: (rule) =>
+				rule.regex(/^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/, {
+					name: 'hex colour',
+					invert: false
+				}),
+			hidden: ({ parent }) => parent?.type !== 'video' || !parent?.frame || parent.frame === 'none'
+		}),
+		defineField({
 			name: 'layout',
 			title: 'Width',
 			description:
@@ -75,14 +105,16 @@ export const galleryItem = defineType({
 	preview: {
 		select: {
 			type: 'type',
+			frame: 'frame',
 			layout: 'layout',
 			caption: 'caption',
 			media: 'image'
 		},
-		prepare({ type, layout, caption, media }) {
+		prepare({ type, frame, layout, caption, media }) {
+			const framed = type === 'video' && frame && frame !== 'none' ? ` · framed (${frame})` : '';
 			return {
 				title: caption || `${type ?? 'item'}`,
-				subtitle: layout,
+				subtitle: `${layout}${framed}`,
 				media
 			};
 		}

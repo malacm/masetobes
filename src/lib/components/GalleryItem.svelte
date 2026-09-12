@@ -12,6 +12,16 @@
 	// page keeps the design's rhythm while the footage is being added.
 	const isPlaceholder = $derived(isVideo && !videoRef);
 
+	/* Framed videos sit centred on a flat colour panel rather than filling the
+	   slot — the Figma "video in a background" treatment. `landscape` is the
+	   3:2 panel drawn for browser recordings, `portrait` the 3:4 one for phone
+	   recordings; the panel colour defaults to the cream in the designs. */
+	const frame = $derived(isVideo && item.frame && item.frame !== 'none' ? item.frame : null);
+	const frameColor = $derived(item.frameColor?.trim() || undefined);
+	// Ratio used for a placeholder inside a panel when none is recorded on the
+	// item: the recordings in the designs are ~1.84 (browser) and ~0.58 (phone).
+	const frameDefaultRatio = $derived(frame === 'portrait' ? 0.58 : 1.84);
+
 	const imgSrc = $derived(!isVideo ? imageUrl(item.image, { width: 1600 }) : null);
 	const imgSrcset = $derived(!isVideo ? imageSrcset(item.image) : undefined);
 	// Reserve the image's box on first render. Without this the gallery has no
@@ -35,6 +45,9 @@
 	// Track whether the video is on screen; playback is decided below.
 	$effect(() => {
 		if (!videoEl || !videoRef) return;
+		// The element is server-rendered, so its metadata can arrive before
+		// hydration attaches the listener below — read it now if it already has.
+		if (videoEl.readyState >= 1) handleLoadedMetadata();
 		const observer = new IntersectionObserver(
 			([entry]) => {
 				isVisible = entry.isIntersecting;
@@ -74,16 +87,21 @@
 	}
 </script>
 
-<figure class="gallery-item" data-layout={item.layout}>
+{#snippet videoMedia()}
 	{#if isPlaceholder}
-		<div class="placeholder" style:aspect-ratio={item.aspectRatio ?? 1.5}>
+		<div
+			class="placeholder"
+			style:aspect-ratio={item.aspectRatio ?? (frame ? frameDefaultRatio : 1.5)}
+			style:--ratio={frame ? (item.aspectRatio ?? frameDefaultRatio) : undefined}
+		>
 			<span>video</span>
 		</div>
-	{:else if isVideo}
+	{:else}
 		<video
 			bind:this={videoEl}
 			src={videoSrc ?? undefined}
 			style:aspect-ratio={videoRatio ?? undefined}
+			style:--ratio={frame ? (videoRatio ?? frameDefaultRatio) : undefined}
 			muted
 			loop
 			playsinline
@@ -91,6 +109,16 @@
 			onloadedmetadata={handleLoadedMetadata}
 			oncanplay={handleCanPlay}
 		></video>
+	{/if}
+{/snippet}
+
+<figure class="gallery-item" data-layout={item.layout}>
+	{#if frame}
+		<div class="frame" data-frame={frame} style:--frame-bg={frameColor}>
+			{@render videoMedia()}
+		</div>
+	{:else if isVideo}
+		{@render videoMedia()}
 	{:else if imgSrc}
 		<img
 			src={imgSrc}
@@ -134,6 +162,69 @@
 		font-size: 1rem;
 		letter-spacing: var(--track-tight);
 		text-transform: lowercase;
+	}
+
+	/* The panel behind a framed video. Its proportions come straight from the
+	   Figma frames: 1400×929 (desktop, full width) and 382×251 (mobile) for
+	   the landscape panel, 690×929 and 382×509 for the portrait one — 3:2 and
+	   3:4 to within a few pixels, and the same at both breakpoints, so the
+	   panel scales with whatever column span it is given. */
+	.frame {
+		/* Size containment: the panel's height comes from its aspect ratio and
+		   nothing else, so footage that doesn't match the panel's orientation
+		   is fitted inside it rather than stretching it. It also makes cqw/cqh
+		   available to the children below. */
+		container-type: size;
+		display: grid;
+		place-items: center;
+		width: 100%;
+		background: var(--frame-bg, #f1f0e8);
+	}
+
+	.frame[data-frame='landscape'] {
+		aspect-ratio: 3 / 2;
+	}
+
+	.frame[data-frame='portrait'] {
+		aspect-ratio: 3 / 4;
+	}
+
+	/* The recording is sized relative to the panel, again from Figma: the
+	   browser capture is 918 of the 1400px panel, the phone capture 290 of
+	   690px. Corner radii scale with the panel (6px and 20px on desktop) so the
+	   mobile frames come out the same shape. */
+	.frame[data-frame='landscape'] {
+		--fit-w: 65.6cqw;
+		--fit-h: 85cqh;
+		--radius: 0.43cqw;
+	}
+
+	.frame[data-frame='portrait'] {
+		--fit-w: 42cqw;
+		--fit-h: 85cqh;
+		--radius: 2.9cqw;
+	}
+
+	.frame > video,
+	.frame > .placeholder {
+		/* Design width, unless that would push the footage past the panel's
+		   edges — then it is scaled down to fit, keeping its own ratio. */
+		width: min(var(--fit-w), calc(var(--fit-h) * var(--ratio, 1.84)));
+		border-radius: var(--radius);
+	}
+
+	.frame > video {
+		/* Clip the footage to the rounded corners rather than letting the
+		   element's box show square behind them. */
+		overflow: hidden;
+		background: transparent;
+	}
+
+	/* The dashed slot marker is drawn for the dark page; on the light panel it
+	   needs a dark stroke to be seen at all. */
+	.frame > .placeholder {
+		border-color: rgba(35, 31, 32, 0.35);
+		color: #231f20;
 	}
 
 	figcaption {
