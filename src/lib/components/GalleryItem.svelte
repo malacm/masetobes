@@ -191,18 +191,18 @@
 
 	/* The recording is sized relative to the panel, again from Figma: the
 	   browser capture is 918 of the 1400px panel, the phone capture 290 of
-	   690px. Corner radii scale with the panel (6px and 20px on desktop) so the
-	   mobile frames come out the same shape. */
+	   690px. Corner radii are fixed: 10px on a browser capture, 20px on a
+	   phone capture, at every breakpoint. */
 	.frame[data-frame='landscape'] {
 		--fit-w: 65.6cqw;
 		--fit-h: 85cqh;
-		--radius: 0.43cqw;
+		--radius: 10px;
 	}
 
 	.frame[data-frame='portrait'] {
 		--fit-w: 42cqw;
 		--fit-h: 85cqh;
-		--radius: 2.9cqw;
+		--radius: 20px;
 	}
 
 	.frame > video,
