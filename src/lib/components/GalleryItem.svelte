@@ -39,8 +39,10 @@
 	// still "metadata", so this costs a few header bytes per video rather than
 	// the file — enough for the browser to reserve the right box up front.
 	const videoSrc = $derived(fileUrl(videoRef));
-	// Prefer the ratio recorded on the item; fall back to what the file reports.
-	const videoRatio = $derived(item.aspectRatio ?? measuredRatio);
+	// The ratio recorded on the item only reserves space until the file has
+	// loaded; after that the file's own ratio wins. A recorded ratio that is
+	// even slightly off would otherwise letterbox the footage inside its box.
+	const videoRatio = $derived(measuredRatio ?? item.aspectRatio ?? null);
 
 	// Track whether the video is on screen; playback is decided below.
 	$effect(() => {
@@ -215,8 +217,11 @@
 
 	.frame > video {
 		/* Clip the footage to the rounded corners rather than letting the
-		   element's box show square behind them. */
+		   element's box show square behind them. Cover, not contain: until the
+		   file's own ratio is known the box may not match it, and a crop is
+		   less visible on the panel than a letterbox. */
 		overflow: hidden;
+		object-fit: cover;
 		background: transparent;
 	}
 
