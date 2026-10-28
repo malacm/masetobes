@@ -246,6 +246,17 @@
 		background: transparent;
 	}
 
+	/* The recording lifts off the panel. Each shadow is the one on its Figma
+	   layer: the browser capture carries a box shadow, the phone capture a
+	   drop-shadow filter — same offset and blur, different rendering. */
+	.frame[data-frame='landscape'] > video {
+		box-shadow: 0 4px 4px 0 rgba(0, 0, 0, 0.25);
+	}
+
+	.frame[data-frame='portrait'] > video {
+		filter: drop-shadow(0 4.623px 4.623px rgba(0, 0, 0, 0.25));
+	}
+
 	/* The dashed slot marker is drawn for the dark page; on the light panel it
 	   needs a dark stroke to be seen at all. */
 	.frame > .placeholder {
