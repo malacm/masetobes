@@ -11,6 +11,7 @@
 	import Footer from '$lib/components/Footer.svelte';
 	import AboutOverlay from '$lib/components/AboutOverlay.svelte';
 	import MusicPlayer from '$lib/components/MusicPlayer.svelte';
+	import Cursor from '$lib/components/Cursor.svelte';
 
 	let { data, children } = $props();
 
@@ -173,6 +174,8 @@
 
 <AboutOverlay content={settings?.aboutContent} contactEmail={settings?.contactEmail} />
 
+<Cursor />
+
 <div class="veil" class:armed class:active bind:this={veilEl} aria-hidden="true"></div>
 
 <!-- The intro's curtain: the other theme's colour over the whole page, the
@@ -192,7 +195,7 @@
 		height: 200vmax;
 		margin: -100vmax 0 0 -100vmax;
 		border-radius: 50%;
-		background: var(--curtain);
+		background: var(--bg-other);
 		z-index: 100;
 		pointer-events: none;
 		will-change: transform;

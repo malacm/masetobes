@@ -108,6 +108,15 @@ button:disabled {
 	cursor: not-allowed;
 }
 
+/* While the dot element is running (src/lib/components/Cursor.svelte — it
+   follows the pointer and pulses to the music, which a CSS cursor image
+   cannot), the native cursor steps out of its way. The SVG cursor above
+   stays as the no-JavaScript fallback. */
+html[data-cursor='dot'] a,
+html[data-cursor='dot'] button:not(:disabled) {
+	cursor: none;
+}
+
 ul,
 ol {
 	list-style: none;

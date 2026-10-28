@@ -13,7 +13,12 @@ export const siteSettingsQuery = /* groq */ `
     _key,
     title,
     artist,
-    audio
+    audio,
+    bpm,
+    beatOffset,
+    beats,
+    hitTimes,
+    hitStrengths
   }
 }
 `;

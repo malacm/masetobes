@@ -4,6 +4,9 @@ function createMusicPlayer() {
 	let tracks = $state<PlaylistTrack[]>([]);
 	let index = $state(0);
 	let isPlaying = $state(false);
+	/* The <audio> element, for its clock. Not reactive: it is read per frame
+	   by whatever pulses to the music, never rendered. */
+	let audio: HTMLAudioElement | null = null;
 
 	const current = $derived<PlaylistTrack | null>(tracks[index] ?? null);
 
@@ -36,6 +39,15 @@ function createMusicPlayer() {
 		isPlaying = value;
 	}
 
+	function attach(el: HTMLAudioElement | null) {
+		audio = el;
+	}
+
+	/** Seconds into the current track, straight from the element. */
+	function time(): number {
+		return audio?.currentTime ?? 0;
+	}
+
 	return {
 		get tracks() {
 			return tracks;
@@ -54,7 +66,9 @@ function createMusicPlayer() {
 		pause,
 		toggle,
 		next,
-		setPlaying
+		setPlaying,
+		attach,
+		time
 	};
 }
 

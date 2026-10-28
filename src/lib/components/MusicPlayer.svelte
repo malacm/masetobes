@@ -25,6 +25,11 @@
 		musicPlayer.setTracks(tracks);
 	});
 
+	$effect(() => {
+		musicPlayer.attach(audioEl ?? null);
+		return () => musicPlayer.attach(null);
+	});
+
 	const trackUrl = $derived(fileUrl(musicPlayer.current?.audio?.asset?._ref ?? null));
 	const label = $derived(
 		musicPlayer.current
