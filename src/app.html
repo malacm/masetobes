@@ -11,6 +11,13 @@
 					var t = localStorage.getItem('theme');
 					if (t === 'alt') document.documentElement.setAttribute('data-theme', 'alt');
 				} catch (e) {}
+				// The intro's curtain (see src/lib/animations/intro.ts): up before
+				// first paint on the first homepage load of the session.
+				try {
+					if (location.pathname === '/' && !sessionStorage.getItem('intro')) {
+						document.documentElement.setAttribute('data-intro', 'pending');
+					}
+				} catch (e) {}
 			})();
 		</script>
 		%sveltekit.head%

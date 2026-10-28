@@ -3,6 +3,8 @@
 	import { page } from '$app/state';
 	import { onNavigate, afterNavigate } from '$app/navigation';
 	import { entrance } from '$lib/stores/entrance.svelte';
+	import { playIntro, introPending } from '$lib/animations/intro';
+	import type { Bloom } from '$lib/components/Nav.svelte';
 	import { startSmoothScroll, type SmoothScroll } from '$lib/animations/smoothScroll';
 	import 'lenis/dist/lenis.css';
 	import Nav from '$lib/components/Nav.svelte';
@@ -17,22 +19,39 @@
 
 	/*
 	  Entrance, on a hard load. The nav and the music player are served hidden
-	  (see stores/entrance.svelte.ts) and let in after a beat: on the homepage
-	  the mark sits alone, pulsing, for long enough to register before the
-	  chrome fades and grows in around it; on any other page there is no mark
-	  to hold on, so the beat is short. The page content and the mark itself
-	  are never touched — an earlier version faded those too, and the mark's
-	  own fade ran unseen inside an invisible parent.
+	  (see stores/entrance.svelte.ts). On the first homepage load of a session
+	  the intro plays (animations/intro.ts) and lets them in as its last beat,
+	  blooming out of the mark; on every other hard load they simply fade and
+	  grow in where they stand, as soon as the JavaScript is ready. The page
+	  content is never touched — an earlier version faded it too, and the
+	  mark's own fade ran unseen inside an invisible parent.
 	*/
-	const HOLD_HOME_MS = 1600;
-	const HOLD_OFF_HOME_MS = 400;
+	let curtainEl: HTMLDivElement | undefined = $state();
+	let navEl: HTMLElement | undefined = $state();
+	let playerEl: HTMLElement | undefined = $state();
+	/* Where the chrome blooms from during the intro: the mark's centre, as a
+	   vertical offset from each piece's resting place. Zero otherwise. */
+	let navBloom = $state<Bloom | null>(null);
+	let playerBloom = $state<Bloom | null>(null);
 
 	$effect(() => {
-		if (entrance.revealed) return;
-		const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-		const hold = reduced ? 0 : untrack(() => isHome) ? HOLD_HOME_MS : HOLD_OFF_HOME_MS;
-		const timer = setTimeout(() => entrance.reveal(), hold);
-		return () => clearTimeout(timer);
+		// Untracked: the intro flips `revealed` as one of its beats, and a
+		// tracked read would re-run this effect right there — tearing the
+		// intro down mid-flight.
+		if (untrack(() => entrance.revealed)) return;
+		if (!curtainEl || !introPending() || !untrack(() => isHome)) {
+			entrance.reveal();
+			return;
+		}
+		const icon = document.querySelector('[data-animation-target="homepage-icon"]');
+		if (icon && navEl && playerEl) {
+			const from = icon.getBoundingClientRect();
+			const centre = (r: DOMRect) => r.top + r.height / 2;
+			const fromY = centre(from);
+			navBloom = { y: fromY - centre(navEl.getBoundingClientRect()), scale: 0.6, ms: 900 };
+			playerBloom = { y: fromY - centre(playerEl.getBoundingClientRect()), scale: 0.6, ms: 900 };
+		}
+		return playIntro({ curtain: curtainEl, reveal: () => entrance.reveal() });
 	});
 
 	/*
@@ -128,7 +147,7 @@
 	<title>{settings?.name ?? 'Mason Tobia'}</title>
 </svelte:head>
 
-<Nav name={settings?.name} revealed={entrance.revealed} />
+<Nav name={settings?.name} revealed={entrance.revealed} bloom={navBloom} bind:el={navEl} />
 
 <main class="page" class:leaving={active} data-home={isHome}>
 	{@render children()}
@@ -145,13 +164,44 @@
 	</div>
 {/if}
 
-<MusicPlayer tracks={settings?.playlist ?? []} revealed={entrance.revealed} />
+<MusicPlayer
+	tracks={settings?.playlist ?? []}
+	revealed={entrance.revealed}
+	bloom={playerBloom}
+	bind:el={playerEl}
+/>
 
 <AboutOverlay content={settings?.aboutContent} contactEmail={settings?.contactEmail} />
 
 <div class="veil" class:armed class:active bind:this={veilEl} aria-hidden="true"></div>
 
+<!-- The intro's curtain: the other theme's colour over the whole page, the
+     mark alone above it (its z-index 200 clears this 100). Only shown when
+     app.html has put it up; the intro shrinks it into the mark and drops it. -->
+<div class="curtain" bind:this={curtainEl} aria-hidden="true"></div>
+
 <style>
+	/* Same geometry as the theme transition's disc: a circle big enough to
+	   cover any viewport at scale 1, centred where the mark is. */
+	.curtain {
+		display: none;
+		position: fixed;
+		top: 50%;
+		left: 50%;
+		width: 200vmax;
+		height: 200vmax;
+		margin: -100vmax 0 0 -100vmax;
+		border-radius: 50%;
+		background: var(--curtain);
+		z-index: 100;
+		pointer-events: none;
+		will-change: transform;
+	}
+
+	:global(html[data-intro='pending']) .curtain {
+		display: block;
+	}
+
 	/* Above the page content, below the two pieces of persistent chrome — the
 	   music player (30) and the nav (50). Those stay sharp while the content
 	   swaps underneath, which is what makes the change read as one page

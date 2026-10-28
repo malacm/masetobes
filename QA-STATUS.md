@@ -809,3 +809,22 @@ Reduced-motion: nothing is hidden, nothing moves. Project-page galleries are
 unchanged — their SVGs still render through `<img>` because only the personal
 load inlines them. One known edge: reloading the page scrolled to an artwork
 paints it once before hydration hides and re-enters it.
+
+## Intro — the sage sweep
+
+First homepage load of a browser session (`sessionStorage` key `intro`,
+set before first paint by the script in `app.html`, which also puts the
+curtain up so nothing can flash ahead of it). `src/lib/animations/intro.ts`:
+
+| beat | what happens |
+|---|---|
+| 0 | page covered by a disc of the *other* theme's colour (`--curtain`); the mark alone on top, in the other theme's shape, slightly blurred |
+| 0.2 → 1.3s | the disc shrinks into the mark — the theme transition's sweep as a curtain |
+| 0.3 → 1.2s | the mark morphs into this theme's shape (skipped if the shapes have not loaded within 600ms) |
+| 0.9 → 1.5s | the mark sharpens |
+| 1.2 → 2.1s | the nav and the player bloom out of the mark's position, 60% → full size (`bloom` props on Nav / MusicPlayer; the same CSS transition does the plain fade-and-grow on every other hard load) |
+| 1.5s | the pulse starts |
+
+Reduced motion: the curtain is dropped at once. Verified at 1440 and 375:
+timings as above, curtain gone and `data-intro="done"` at 1.5s, chrome at
+rest by 2.4s, repeat loads in the session skip the curtain entirely.

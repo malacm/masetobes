@@ -22,6 +22,9 @@
 	   the DOM swap — while the frost is still visibly doing the work. */
 	--veil-bg: rgba(35, 31, 32, 0.72);
 	--veil-blur: 28px;
+	/* The intro's curtain is the *other* theme's page colour — the site opens
+	   out of its other self (src/lib/animations/intro.ts). */
+	--curtain: #72805c;
 
 	/* layout */
 	--page-pad-x: 20px;
@@ -67,6 +70,7 @@
 	--overlay-blur: 20px;
 	--veil-bg: rgba(114, 128, 92, 0.72);
 	--veil-blur: 28px;
+	--curtain: #231f20;
 }
 
 /* Mobile frames are 402 wide with 10px padding, and the grid collapses to a

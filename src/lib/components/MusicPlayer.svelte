@@ -4,15 +4,20 @@
 	import { fileUrl } from '$lib/sanity/image';
 	import Marquee from './Marquee.svelte';
 	import type { PlaylistTrack } from '$lib/sanity/types';
+	import type { Bloom } from './Nav.svelte';
 
 	type Props = {
 		tracks: PlaylistTrack[];
 		/* False while the site's entrance is holding the chrome back — see
 		   stores/entrance.svelte.ts. */
 		revealed?: boolean;
+		/* Set by the intro so the player blooms out of the mark rather than
+		   growing in place. */
+		bloom?: Bloom | null;
+		el?: HTMLElement;
 	};
 
-	const { tracks, revealed = true }: Props = $props();
+	let { tracks, revealed = true, bloom = null, el = $bindable() }: Props = $props();
 
 	let audioEl: HTMLAudioElement | undefined = $state();
 
@@ -46,7 +51,14 @@
 <div class="center-wrap">
 	<!-- The entrance scales the row, not the wrapper: the wrapper's transform
 	     is what centres it. -->
-	<div class="player" class:pending={!revealed}>
+	<div
+		class="player"
+		class:pending={!revealed}
+		bind:this={el}
+		style:--bloom-y={bloom ? `${bloom.y}px` : undefined}
+		style:--bloom-scale={bloom ? bloom.scale : undefined}
+		style:--bloom-ms={bloom ? `${bloom.ms}ms` : undefined}
+	>
 		<button
 			class="pill"
 			type="button"
@@ -94,18 +106,19 @@
 		display: flex;
 		gap: var(--pill-gap);
 		align-items: center;
-		/* The entrance: fades and grows in from slightly under size, on the
-		   veil's arrival curve — the same as the nav. */
+		/* The entrance: fades and grows in on the veil's arrival curve — from
+		   slightly under size where it stands, or, when the intro sets the
+		   bloom properties, out of the mark's position. Same as the nav. */
 		transform-origin: 50% 50%;
 		transition:
-			opacity 700ms cubic-bezier(0.22, 1, 0.36, 1),
-			transform 700ms cubic-bezier(0.22, 1, 0.36, 1),
+			opacity var(--bloom-ms, 700ms) cubic-bezier(0.22, 1, 0.36, 1),
+			transform var(--bloom-ms, 700ms) cubic-bezier(0.22, 1, 0.36, 1),
 			visibility 0s;
 	}
 
 	.player.pending {
 		opacity: 0;
-		transform: scale(0.9);
+		transform: translateY(var(--bloom-y, 0px)) scale(var(--bloom-scale, 0.9));
 		visibility: hidden;
 	}
 

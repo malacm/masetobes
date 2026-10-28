@@ -1,3 +1,10 @@
+<script lang="ts" module>
+	/* Where a piece of chrome grows in from, when the intro lets it in: a
+	   vertical offset (px) from its resting place, its starting scale, and
+	   how long the trip takes. */
+	export type Bloom = { y: number; scale: number; ms: number };
+</script>
+
 <script lang="ts">
 	import { page } from '$app/state';
 	import { aboutOverlay } from '$lib/stores/aboutOverlay.svelte';
@@ -7,9 +14,13 @@
 		/* False while the site's entrance is holding the chrome back — see
 		   stores/entrance.svelte.ts. */
 		revealed?: boolean;
+		/* Set by the intro so the nav blooms out of the mark rather than
+		   growing in place. */
+		bloom?: Bloom | null;
+		el?: HTMLElement;
 	};
 
-	const { name = 'Mason Tobia', revealed = true }: Props = $props();
+	let { name = 'Mason Tobia', revealed = true, bloom = null, el = $bindable() }: Props = $props();
 
 	function handleAboutClick(e: MouseEvent) {
 		e.preventDefault();
@@ -23,7 +34,14 @@
 	});
 </script>
 
-<nav class="nav" class:pending={!revealed}>
+<nav
+	class="nav"
+	class:pending={!revealed}
+	bind:this={el}
+	style:--bloom-y={bloom ? `${bloom.y}px` : undefined}
+	style:--bloom-scale={bloom ? bloom.scale : undefined}
+	style:--bloom-ms={bloom ? `${bloom.ms}ms` : undefined}
+>
 	<a class="name" class:concealed={aboutOverlay.open} href="/">{name}</a>
 
 	<ul class="links">
@@ -63,19 +81,21 @@
 		align-items: flex-end;
 		padding: var(--nav-pad-y) var(--nav-pad-x);
 		pointer-events: none;
-		/* The entrance: fades and grows in from slightly under size, on the
-		   veil's arrival curve. `visibility` is held while pending so the
-		   links cannot take focus before they can be seen. */
+		/* The entrance: fades and grows in on the veil's arrival curve — from
+		   slightly under size where it stands, or, when the intro sets the
+		   bloom properties, out of the mark's position. `visibility` is held
+		   while pending so the links cannot take focus before they can be
+		   seen. */
 		transform-origin: 50% 50%;
 		transition:
-			opacity 700ms cubic-bezier(0.22, 1, 0.36, 1),
-			transform 700ms cubic-bezier(0.22, 1, 0.36, 1),
+			opacity var(--bloom-ms, 700ms) cubic-bezier(0.22, 1, 0.36, 1),
+			transform var(--bloom-ms, 700ms) cubic-bezier(0.22, 1, 0.36, 1),
 			visibility 0s;
 	}
 
 	.nav.pending {
 		opacity: 0;
-		transform: scale(0.9);
+		transform: translateY(var(--bloom-y, 0px)) scale(var(--bloom-scale, 0.9));
 		visibility: hidden;
 	}
 
