@@ -4,9 +4,12 @@
 
 	type Props = {
 		name?: string;
+		/* False while the site's entrance is holding the chrome back — see
+		   stores/entrance.svelte.ts. */
+		revealed?: boolean;
 	};
 
-	const { name = 'Mason Tobia' }: Props = $props();
+	const { name = 'Mason Tobia', revealed = true }: Props = $props();
 
 	function handleAboutClick(e: MouseEvent) {
 		e.preventDefault();
@@ -20,7 +23,7 @@
 	});
 </script>
 
-<nav class="nav">
+<nav class="nav" class:pending={!revealed}>
 	<a class="name" class:concealed={aboutOverlay.open} href="/">{name}</a>
 
 	<ul class="links">
@@ -60,6 +63,26 @@
 		align-items: flex-end;
 		padding: var(--nav-pad-y) var(--nav-pad-x);
 		pointer-events: none;
+		/* The entrance: fades and grows in from slightly under size, on the
+		   veil's arrival curve. `visibility` is held while pending so the
+		   links cannot take focus before they can be seen. */
+		transform-origin: 50% 50%;
+		transition:
+			opacity 700ms cubic-bezier(0.22, 1, 0.36, 1),
+			transform 700ms cubic-bezier(0.22, 1, 0.36, 1),
+			visibility 0s;
+	}
+
+	.nav.pending {
+		opacity: 0;
+		transform: scale(0.9);
+		visibility: hidden;
+	}
+
+	@media (prefers-reduced-motion: reduce) {
+		.nav {
+			transition: none;
+		}
 	}
 
 	.name,

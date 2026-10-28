@@ -1,7 +1,8 @@
 <script lang="ts">
-	import { tick } from 'svelte';
+	import { tick, untrack } from 'svelte';
 	import { page } from '$app/state';
 	import { onNavigate, afterNavigate } from '$app/navigation';
+	import { entrance } from '$lib/stores/entrance.svelte';
 	import { startSmoothScroll, type SmoothScroll } from '$lib/animations/smoothScroll';
 	import 'lenis/dist/lenis.css';
 	import Nav from '$lib/components/Nav.svelte';
@@ -13,6 +14,26 @@
 
 	const settings = $derived(data.siteSettings);
 	const isHome = $derived(page.url.pathname === '/');
+
+	/*
+	  Entrance, on a hard load. The nav and the music player are served hidden
+	  (see stores/entrance.svelte.ts) and let in after a beat: on the homepage
+	  the mark sits alone, pulsing, for long enough to register before the
+	  chrome fades and grows in around it; on any other page there is no mark
+	  to hold on, so the beat is short. The page content and the mark itself
+	  are never touched — an earlier version faded those too, and the mark's
+	  own fade ran unseen inside an invisible parent.
+	*/
+	const HOLD_HOME_MS = 1600;
+	const HOLD_OFF_HOME_MS = 400;
+
+	$effect(() => {
+		if (entrance.revealed) return;
+		const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+		const hold = reduced ? 0 : untrack(() => isHome) ? HOLD_HOME_MS : HOLD_OFF_HOME_MS;
+		const timer = setTimeout(() => entrance.reveal(), hold);
+		return () => clearTimeout(timer);
+	});
 
 	/*
 	  Page transition. There is no scroll-driven motion anywhere on the site any
@@ -107,7 +128,7 @@
 	<title>{settings?.name ?? 'Mason Tobia'}</title>
 </svelte:head>
 
-<Nav name={settings?.name} />
+<Nav name={settings?.name} revealed={entrance.revealed} />
 
 <main class="page" class:leaving={active} data-home={isHome}>
 	{@render children()}
@@ -124,7 +145,7 @@
 	</div>
 {/if}
 
-<MusicPlayer tracks={settings?.playlist ?? []} />
+<MusicPlayer tracks={settings?.playlist ?? []} revealed={entrance.revealed} />
 
 <AboutOverlay content={settings?.aboutContent} contactEmail={settings?.contactEmail} />
 

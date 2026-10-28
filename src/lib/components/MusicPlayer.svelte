@@ -7,9 +7,12 @@
 
 	type Props = {
 		tracks: PlaylistTrack[];
+		/* False while the site's entrance is holding the chrome back — see
+		   stores/entrance.svelte.ts. */
+		revealed?: boolean;
 	};
 
-	const { tracks }: Props = $props();
+	const { tracks, revealed = true }: Props = $props();
 
 	let audioEl: HTMLAudioElement | undefined = $state();
 
@@ -41,7 +44,9 @@
   page instead, so that layout is gone.
 -->
 <div class="center-wrap">
-	<div class="player">
+	<!-- The entrance scales the row, not the wrapper: the wrapper's transform
+	     is what centres it. -->
+	<div class="player" class:pending={!revealed}>
 		<button
 			class="pill"
 			type="button"
@@ -89,6 +94,25 @@
 		display: flex;
 		gap: var(--pill-gap);
 		align-items: center;
+		/* The entrance: fades and grows in from slightly under size, on the
+		   veil's arrival curve — the same as the nav. */
+		transform-origin: 50% 50%;
+		transition:
+			opacity 700ms cubic-bezier(0.22, 1, 0.36, 1),
+			transform 700ms cubic-bezier(0.22, 1, 0.36, 1),
+			visibility 0s;
+	}
+
+	.player.pending {
+		opacity: 0;
+		transform: scale(0.9);
+		visibility: hidden;
+	}
+
+	@media (prefers-reduced-motion: reduce) {
+		.player {
+			transition: none;
+		}
 	}
 
 	.pill {
