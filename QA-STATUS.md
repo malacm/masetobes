@@ -765,3 +765,20 @@ the fix is the standard one.
 - Figma desktop Dev Mode server answers raw JSON-RPC on `127.0.0.1:3845/mcp`
   (initialize → `mcp-session-id` header → `tools/call`); `get_metadata` on the
   section ids from page `0:1` is the fastest way to find frame ids.
+
+## GIF overlays and video thumbnails
+
+Two additions to the `workProject` schema, both optional and both centred on
+their media with a width given as a % (default 40):
+
+| field | what it does |
+|---|---|
+| `heroGif` / `heroGifWidth` | animated GIF centred over the project page hero (image or video); stacks with `heroLogo` |
+| `thumbnailVideo` | plays in the `/work` card in place of `thumbnailImage`, cropped to `thumbnailRatio` like the image; the image becomes its poster, and is no longer required once a video is uploaded |
+| `thumbnailGif` / `thumbnailGifWidth` | animated GIF centred over the card's image or video, under the hover panel |
+
+GIF overlays are served untransformed (`rawImageUrl`) rather than through the
+image pipeline, so resizing or `auto=format` can never flatten them to a single
+frame — which also means the file is served at its uploaded size, so keep it
+small. Card videos use `autoplayWhenVisible`, the same play-while-on-screen,
+pause-while-flung policy as the gallery videos.

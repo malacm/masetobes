@@ -79,7 +79,12 @@ export type WorkProject = {
 	instagramUrl?: string;
 	websiteUrl?: string;
 	thumbnailImage?: SanityImageRef;
+	/* Plays in the /work card in place of the image; the image is its poster. */
+	thumbnailVideo?: SanityFileRef;
 	thumbnailRatio?: number;
+	/* Animated GIF centred over the thumbnail media, sized as a % of the card. */
+	thumbnailGif?: SanityImageRef;
+	thumbnailGifWidth?: number;
 	heroImage?: SanityImageRef;
 	heroVideo?: SanityFileRef;
 	heroVideoPoster?: SanityImageRef;
@@ -96,6 +101,9 @@ export type WorkProject = {
 		| 'bottom-center'
 		| 'bottom-right';
 	heroLogoWidth?: number;
+	/* Animated GIF centred over the hero media, sized as a % of the hero. */
+	heroGif?: SanityImageRef;
+	heroGifWidth?: number;
 	galleryItems?: GalleryItem[];
 	publishedAt?: string;
 	orderRank?: string;
@@ -103,7 +111,15 @@ export type WorkProject = {
 
 export type WorkProjectListItem = Pick<
 	WorkProject,
-	'_id' | 'title' | 'slug' | 'thumbnailImage' | 'thumbnailRatio' | 'infoBlocks'
+	| '_id'
+	| 'title'
+	| 'slug'
+	| 'thumbnailImage'
+	| 'thumbnailVideo'
+	| 'thumbnailRatio'
+	| 'thumbnailGif'
+	| 'thumbnailGifWidth'
+	| 'infoBlocks'
 >;
 
 export type WorkProjectNeighbors = {

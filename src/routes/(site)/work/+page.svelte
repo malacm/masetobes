@@ -1,5 +1,6 @@
 <script lang="ts">
-	import { imageUrl, imageSrcset } from '$lib/sanity/image';
+	import { imageUrl, imageSrcset, fileUrl, rawImageUrl } from '$lib/sanity/image';
+	import { autoplayWhenVisible } from '$lib/actions/autoplayWhenVisible.svelte';
 	import type { WorkProjectListItem } from '$lib/sanity/types';
 
 	let { data } = $props();
@@ -20,13 +21,42 @@
 					<!-- Cards are a fixed shape and the thumbnail is cropped to fill
 					     it — 4:5 for most, square for WHR and Buck Mason. -->
 					<div class="frame" style:aspect-ratio={project.thumbnailRatio ?? 0.8}>
-						{#if project.thumbnailImage}
+						<!-- A video thumbnail is cropped to the same card shape as an
+						     image one; the image, when there is one, is its poster. -->
+						{#if project.thumbnailVideo?.asset}
+							<video
+								class="thumb"
+								src={fileUrl(project.thumbnailVideo.asset._ref) ?? undefined}
+								poster={project.thumbnailImage
+									? (imageUrl(project.thumbnailImage, { width: 1200 }) ?? undefined)
+									: undefined}
+								muted
+								loop
+								playsinline
+								preload="metadata"
+								use:autoplayWhenVisible
+							></video>
+						{:else if project.thumbnailImage}
 							<img
 								class="thumb"
 								src={imageUrl(project.thumbnailImage, { width: 1200 }) ?? ''}
 								srcset={imageSrcset(project.thumbnailImage, [400, 800, 1200, 1600])}
 								sizes="(max-width: 768px) 100vw, 50vw"
 								alt={project.title}
+								loading="lazy"
+								decoding="async"
+							/>
+						{/if}
+
+						<!-- Animated GIF centred on the thumbnail, under the hover
+						     panel. Served untransformed (see rawImageUrl) so the
+						     animation is never flattened. -->
+						{#if project.thumbnailGif}
+							<img
+								class="gif"
+								style:width={`${project.thumbnailGifWidth ?? 40}%`}
+								src={rawImageUrl(project.thumbnailGif) ?? ''}
+								alt=""
 								loading="lazy"
 								decoding="async"
 							/>
@@ -110,6 +140,16 @@
 		width: 100%;
 		height: 100%;
 		object-fit: cover;
+	}
+
+	.gif {
+		position: absolute;
+		top: 50%;
+		left: 50%;
+		transform: translate(-50%, -50%);
+		height: auto;
+		max-width: 100%;
+		pointer-events: none;
 	}
 
 	/* Frosted panel over the whole thumbnail on hover. */

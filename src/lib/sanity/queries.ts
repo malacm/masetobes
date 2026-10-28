@@ -24,7 +24,10 @@ export const workProjectsListQuery = /* groq */ `
   title,
   slug,
   thumbnailImage,
+  thumbnailVideo,
   thumbnailRatio,
+  thumbnailGif,
+  thumbnailGifWidth,
   infoBlocks
 }
 `;
@@ -49,6 +52,8 @@ export const workProjectBySlugQuery = /* groq */ `
   heroLogo,
   heroLogoPosition,
   heroLogoWidth,
+  heroGif,
+  heroGifWidth,
   galleryItems,
   publishedAt,
   orderRank

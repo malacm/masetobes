@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { imageUrl, imageSrcset, imageAspectRatio, fileUrl } from '$lib/sanity/image';
+	import { imageUrl, imageSrcset, imageAspectRatio, fileUrl, rawImageUrl } from '$lib/sanity/image';
 	import Gallery from '$lib/components/Gallery.svelte';
 	import PortableText from '$lib/components/PortableText.svelte';
 
@@ -100,6 +100,18 @@
 					data-position={project.heroLogoPosition ?? 'center'}
 					style:width={`${project.heroLogoWidth ?? 40}%`}
 					src={imageUrl(project.heroLogo, { width: 1200 }) ?? ''}
+					alt=""
+					decoding="async"
+				/>
+			{/if}
+
+			<!-- Animated GIF centred on the media. Served untransformed (see
+			     rawImageUrl) so the animation is never flattened. -->
+			{#if project.heroGif}
+				<img
+					class="hero-gif"
+					style:width={`${project.heroGifWidth ?? 40}%`}
+					src={rawImageUrl(project.heroGif) ?? ''}
 					alt=""
 					decoding="async"
 				/>
@@ -379,6 +391,16 @@
 	.hero-logo[data-position='bottom-right'] {
 		bottom: var(--inset);
 		right: var(--inset);
+	}
+
+	.hero-gif {
+		position: absolute;
+		top: 50%;
+		left: 50%;
+		transform: translate(-50%, -50%);
+		height: auto;
+		max-width: 100%;
+		pointer-events: none;
 	}
 
 	/* The hero is the gallery's first row, so it keeps the row gutter. Without

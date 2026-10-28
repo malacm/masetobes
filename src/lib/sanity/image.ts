@@ -46,6 +46,20 @@ export function imageAspectRatio(source: SanityImageRef | undefined | null): num
 	return Number(w) / Number(h);
 }
 
+/**
+ * The asset exactly as uploaded, with no transformation parameters. Used for
+ * animated GIFs: the image pipeline's resizing and `auto=format` conversion
+ * can return a single flattened frame, and an overlay GIF is small enough
+ * that it does not need resizing anyway.
+ */
+export function rawImageUrl(source: SanityImageRef | undefined | null): string | null {
+	const ref = source?.asset?._ref;
+	if (!ref) return null;
+	const [, id, dims, ext] = ref.match(/^image-([a-f0-9]+)-(\d+x\d+)-(\w+)$/) ?? [];
+	if (!id || !dims || !ext) return null;
+	return `https://cdn.sanity.io/images/${sanityConfig.projectId}/${sanityConfig.dataset}/${id}-${dims}.${ext}`;
+}
+
 export function fileUrl(ref: string | undefined | null): string | null {
 	if (!ref) return null;
 	const [, id, ext] = ref.match(/^file-([a-f0-9]+)-(\w+)$/) ?? [];

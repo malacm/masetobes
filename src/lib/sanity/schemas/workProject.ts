@@ -62,10 +62,24 @@ export const workProject = defineType({
 		defineField({
 			name: 'thumbnailImage',
 			title: 'Thumbnail image',
-			description: 'Used in the /work index grid.',
+			description:
+				'Used in the /work index grid. With a thumbnail video below, this is the still shown before/while the video loads.',
 			type: 'image',
 			options: { hotspot: true },
-			validation: (rule) => rule.required()
+			validation: (rule) =>
+				rule.custom((value, context) => {
+					const doc = context.document as { thumbnailVideo?: { asset?: unknown } } | undefined;
+					if (value || doc?.thumbnailVideo?.asset) return true;
+					return 'Required unless a thumbnail video is uploaded';
+				})
+		}),
+		defineField({
+			name: 'thumbnailVideo',
+			title: 'Thumbnail video',
+			description:
+				'Optional. Plays in the /work index card in place of the thumbnail image (autoplay, muted, looping), cropped to the card shape below.',
+			type: 'file',
+			options: { accept: 'video/*' }
 		}),
 		defineField({
 			name: 'thumbnailRatio',
@@ -75,6 +89,23 @@ export const workProject = defineType({
 			type: 'number',
 			initialValue: 0.8,
 			validation: (rule) => rule.positive()
+		}),
+		defineField({
+			name: 'thumbnailGif',
+			title: 'Thumbnail GIF overlay',
+			description:
+				'Optional animated GIF centred on top of the thumbnail image or video. Served as uploaded, so keep the file small.',
+			type: 'image',
+			options: { accept: 'image/gif' }
+		}),
+		defineField({
+			name: 'thumbnailGifWidth',
+			title: 'Thumbnail GIF width (%)',
+			description: 'GIF width as a percentage of the card. Default 40%.',
+			type: 'number',
+			validation: (rule) => rule.min(5).max(100),
+			initialValue: 40,
+			hidden: ({ parent }) => !parent?.thumbnailGif
 		}),
 		defineField({
 			name: 'heroImage',
@@ -141,6 +172,23 @@ export const workProject = defineType({
 			validation: (rule) => rule.min(5).max(100),
 			initialValue: 40,
 			hidden: ({ parent }) => !parent?.heroLogo
+		}),
+		defineField({
+			name: 'heroGif',
+			title: 'Hero GIF overlay',
+			description:
+				'Optional animated GIF centred on top of the hero image or video. Served as uploaded, so keep the file small. Can be combined with the logo overlay above.',
+			type: 'image',
+			options: { accept: 'image/gif' }
+		}),
+		defineField({
+			name: 'heroGifWidth',
+			title: 'Hero GIF width (%)',
+			description: 'GIF width as a percentage of the hero. Default 40%.',
+			type: 'number',
+			validation: (rule) => rule.min(5).max(100),
+			initialValue: 40,
+			hidden: ({ parent }) => !parent?.heroGif
 		}),
 		defineField({
 			name: 'galleryItems',
