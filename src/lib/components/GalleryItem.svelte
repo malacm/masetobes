@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { imageUrl, imageSrcset, imageAspectRatio, fileUrl } from '$lib/sanity/image';
 	import { scrollState } from '$lib/stores/scrollState.svelte';
+	import { svgEntrance } from '$lib/animations/svgEntrance';
 	import type { GalleryItem } from '$lib/sanity/types';
 
 	type Props = { item: GalleryItem };
@@ -121,6 +122,13 @@
 		</div>
 	{:else if isVideo}
 		{@render videoMedia()}
+	{:else if item.svgMarkup}
+		<!-- Inline so the entrance can move the shapes inside it. The box is
+		     reserved from the asset's own ratio, as for an image. -->
+		<div class="inline-svg" style:aspect-ratio={imgRatio ?? undefined} use:svgEntrance>
+			<!-- Cleaned server-side before it is trusted here: server/inlineSvg.ts -->
+			{@html item.svgMarkup}
+		</div>
 	{:else if imgSrc}
 		<img
 			src={imgSrc}
@@ -150,6 +158,19 @@
 		width: 100%;
 		height: auto;
 		object-fit: contain;
+	}
+
+	.inline-svg {
+		width: 100%;
+	}
+
+	.inline-svg :global(svg) {
+		display: block;
+		width: 100%;
+		height: 100%;
+		/* The blur on arriving shapes would otherwise be clipped to the
+		   artwork's box at its edges. */
+		overflow: visible;
 	}
 
 	.placeholder {

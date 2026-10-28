@@ -30,6 +30,9 @@ export type GalleryItem = {
 	type: 'image' | 'svg' | 'video' | 'gif';
 	image?: SanityImageRef;
 	video?: SanityFileRef;
+	/* SVG only, added by a page's server load: the file's markup, cleaned, for
+	   rendering inline so its shapes can be animated. Absent → plain <img>. */
+	svgMarkup?: string;
 	layout: GalleryItemLayout;
 	aspectRatio?: number;
 	/* Video only: set the footage on a flat colour panel — 3:2 for a desktop

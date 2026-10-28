@@ -782,3 +782,30 @@ image pipeline, so resizing or `auto=format` can never flatten them to a single
 frame — which also means the file is served at its uploaded size, so keep it
 small. Card videos use `autoplayWhenVisible`, the same play-while-on-screen,
 pause-while-flung policy as the gallery videos.
+
+## SVG entrances on /personal
+
+The four vector artworks (the arrow mark, OPEN UP, the MGT lettering, the LR
+monogram) are now fetched as text in the page's server load, cleaned
+(`src/lib/server/inlineSvg.ts`), and rendered inline, so their shapes can be
+animated. Each plays once, the first time 30% of it is on screen
+(`src/lib/animations/svgEntrance.ts`), in the site's own vocabulary: out of a
+blur on the veil's curve, from the homepage pulse's extreme state. The
+choreography is read off the file's structure rather than keyed to the asset:
+
+| structure | choreography | today |
+|---|---|---|
+| one accent-coloured shape among white ones | the accent blooms from a point at its centre; the white shapes travel a short way towards it as they resolve | green disc + arrows: the arrows arrive along the direction they point |
+| several shapes of one colour | each resolves in turn in reading order — row by row, left to right — 120ms apart | MGT, five strokes; OPEN UP, six letters on two lines |
+| a single shape | the whole artwork settles into focus | LR monogram |
+
+OPEN UP had been a PNG since the Figma import rasterised every personal item,
+so it could not be animated; `scripts/swap-open-up-svg.mjs` uploaded the
+vector export of node 1:39977 (`scripts/assets/personal/node-1-39977.svg`) and
+retyped the item as `svg`. The PNG asset is still in the dataset and the
+document is backed up in `.backups/`.
+
+Reduced-motion: nothing is hidden, nothing moves. Project-page galleries are
+unchanged — their SVGs still render through `<img>` because only the personal
+load inlines them. One known edge: reloading the page scrolled to an artwork
+paints it once before hydration hides and re-enters it.
