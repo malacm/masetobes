@@ -99,11 +99,15 @@
 		margin-left: -0.059em;
 	}
 
-	/* Figma: Hauss Bold 20px at a 1012px wordmark, box at x 92.5% / y 21.4% of
-	   the wordmark — inside the right counter of the T, under its crossbar. */
+	/* Figma: Hauss Bold 20px at a 1012px wordmark, box at y 21.4% of the
+	   wordmark — inside the right counter of the T, under its crossbar. The
+	   frame had the box at x 92.5%, which left the year adrift of the stem;
+	   Mason wanted it tucked in, so it now sits as close beside the stem
+	   (whose right edge is at 89.4%) as it is below the crossbar, once the
+	   line box's own inset around the sideways glyphs is allowed for. */
 	.year {
 		position: absolute;
-		left: 92.5%;
+		left: 90%;
 		top: 21.4%;
 		writing-mode: vertical-rl;
 		font-size: 1.976cqw;
@@ -121,7 +125,7 @@
 		/* 10px at a 276px wordmark — proportionally almost twice the desktop
 		   size, which is what keeps it legible in a 77px-wide T. */
 		.year {
-			left: 94.2%;
+			left: 90%;
 			top: 22.3%;
 			font-size: 3.62cqw;
 		}
